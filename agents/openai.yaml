@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kris PPTX Beautifier"
+  short_description: "先确认颜色、文案和风格，再按页面逻辑精细重构可编辑 PPTX"
+  default_prompt: "Use $kris-pptx-beautifier to confirm the output, color, copy, and visual direction; analyze the source logic; select a suitable design system; author at 1920x1080; and export a precisely aligned editable PPTX."

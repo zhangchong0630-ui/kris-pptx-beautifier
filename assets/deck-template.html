@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kris PPTX Beautifier Deck</title>
+  <style>
+    :root {
+      --slide-width: 1920px;
+      --slide-height: 1080px;
+      --space-1: 8px;
+      --space-2: 16px;
+      --space-3: 24px;
+      --space-4: 32px;
+      --page-x: 108px;
+      --ink: #17212b;
+      --muted: #586574;
+      --paper: #f7f8fa;
+      --accent: #e4572e;
+      --support: #1f6f78;
+      --line: #d6dce2;
+      --font-sans: Arial, "PingFang SC", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #dfe3e8; font-family: var(--font-sans); }
+    .deck-viewport { position: fixed; inset: 0; overflow: hidden; }
+    .deck-stage { position: absolute; left: 0; top: 0; width: var(--slide-width); height: var(--slide-height); transform-origin: 0 0; }
+
+    [data-pptx-slide] {
+      position: absolute;
+      inset: 0;
+      display: block;
+      width: var(--slide-width);
+      height: var(--slide-height);
+      overflow: hidden;
+      background: var(--paper);
+      color: var(--ink);
+      visibility: hidden;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    [data-pptx-slide][data-active="true"] { visibility: visible; opacity: 1; pointer-events: auto; }
+    [data-pptx] { position: absolute; margin: 0; letter-spacing: 0; }
+    [data-pptx="shape-text"] { display: flex; align-items: center; }
+
+    .eyebrow { left: 108px; top: 87px; width: 840px; height: 42px; color: var(--support); font-size: 32px; font-weight: 700; line-height: 42px; }
+    .title { left: 108px; top: 183px; width: 1035px; height: 198px; font-size: 81px; line-height: 1.12; font-weight: 700; }
+    .body-copy { left: 108px; top: 429px; width: 840px; height: 168px; color: var(--muted); font-size: 38px; line-height: 1.42; }
+    .hero-block { left: 1239px; top: 0; width: 681px; height: 1080px; background: var(--support); }
+    .metric { left: 1239px; top: 291px; width: 681px; height: 165px; color: #ffffff; text-align: center; font-size: 114px; line-height: 165px; font-weight: 700; }
+    .metric-label { left: 1269px; top: 489px; width: 621px; height: 54px; color: #d7eff1; text-align: center; font-size: 36px; line-height: 54px; }
+    .rule { left: 108px; top: 975px; width: 1035px; height: 5px; background: var(--accent); }
+
+    body.pptx-export-mode { width: 1920px; height: auto; overflow: visible; }
+    body.pptx-export-mode .deck-viewport,
+    body.pptx-export-mode .deck-stage { position: static; width: 1920px; height: auto; overflow: visible; transform: none !important; }
+    body.pptx-export-mode [data-pptx-slide] { position: relative; inset: auto; visibility: visible; opacity: 1; pointer-events: auto; }
+  </style>
+</head>
+<body>
+  <main class="deck-viewport" id="deck">
+    <div class="deck-stage">
+    <section class="slide" data-pptx-slide data-active="true" data-label="Example slide">
+      <div class="hero-block" data-pptx="shape"></div>
+      <p class="eyebrow" data-pptx="text" data-source-id="s01-eyebrow">EXAMPLE SECTION</p>
+      <h1 class="title" data-pptx="text" data-source-id="s01-title">Make the argument visible</h1>
+      <p class="body-copy" data-pptx="text" data-source-id="s01-body">Replace this example with locked source content, then redesign the composition around it.</p>
+      <p class="metric" data-pptx="text" data-source-id="s01-metric">42%</p>
+      <p class="metric-label" data-pptx="text" data-source-id="s01-metric-label">Primary metric label</p>
+      <div class="rule" data-pptx="shape"></div>
+    </section>
+    </div>
+  </main>
+
+  <script>
+    window.__pptxShowSlide = (index) => {
+      document.querySelectorAll("[data-pptx-slide]").forEach((slide, i) => {
+        slide.dataset.active = i === index ? "true" : "false";
+      });
+    };
+    window.__pptxSetExportMode = (enabled) => {
+      document.body.classList.toggle("pptx-export-mode", Boolean(enabled));
+      if (!enabled) fitStage();
+    };
+    function fitStage() {
+      if (document.body.classList.contains("pptx-export-mode")) return;
+      const stage = document.querySelector(".deck-stage");
+      const scale = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
+      const x = (window.innerWidth - 1920 * scale) / 2;
+      const y = (window.innerHeight - 1080 * scale) / 2;
+      stage.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
+    }
+    window.addEventListener("resize", fitStage);
+    fitStage();
+  </script>
+  <script type="application/json" id="speaker-notes">
+    [""]
+  </script>
+</body>
+</html>
