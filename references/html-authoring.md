@@ -51,6 +51,13 @@ Do not rely on CSS transforms, blend modes, clipping paths, masks, text gradient
 ## Images and Charts
 
 - Keep original images or use verified assets.
+- Follow `visual-asset-plan.json`; do not introduce an icon or image absent from the approved plan.
+- Add `data-asset-id` to every approved non-source icon or image so it can be traced to the plan.
+- Use one approved icon family and treatment across the rebuilt pages. Do not generate icons with an image model.
+- Use simple native shapes for checks, steps, arrows, and status marks when they communicate clearly and editability matters.
+- Keep approved library icons as local assets. Disclose when an icon is exported as an image rather than editable paths.
+- Use generated images only for approved non-factual roles, and use the user-selected local candidate.
+- Never generate logos, screenshots, charts, data, evidence, or factual diagrams.
 - Use `object-fit: cover|contain` and explicit dimensions.
 - Add meaningful `alt` text.
 - Use native HTML/CSS for simple bars and metric visuals only when every component can be marked as a basic shape or text.

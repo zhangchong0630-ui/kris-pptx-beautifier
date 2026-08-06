@@ -51,6 +51,16 @@
 - Ant Design patterns organize existing relationships; they do not impose default Ant styling or application metaphors.
 - Final merge ledger records the selected source-style mode.
 
+## Visual Assets
+
+- `visual-asset-plan.json` records separate approved icon and image decisions.
+- Every selected slide has an explicit icon action and image action, including `none` where appropriate.
+- Every new icon has a clear semantic role, uses the approved family and treatment, and is traceable through `data-asset-id`.
+- No AI-generated icon, fabricated logo, screenshot, chart, evidence, data, or factual diagram exists.
+- Every generated image matches an approved non-factual role and the exact user-selected candidate.
+- Every searched or replaced external image has provenance and permission recorded.
+- Generated and external images are disclosed in the final delivery report.
+
 ## Editability Report
 
 Before delivery, record which regions were rasterized. A normal photograph exported as a PowerPoint image is still editable. A chart or compound region captured under `data-pptx="raster"` is not internally editable and must be disclosed.

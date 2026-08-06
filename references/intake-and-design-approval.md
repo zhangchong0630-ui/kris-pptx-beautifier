@@ -3,7 +3,7 @@
 ## Purpose
 
 Do not begin slide authoring until the user has set the project boundary. Ask in
-two short rounds so the user is not forced through a long questionnaire.
+short rounds so the user is not forced through a long questionnaire.
 
 ## Round 1: Required Before Inspection
 
@@ -83,6 +83,16 @@ decision summary before HTML authoring when approval mode is not `AI-direct`:
 Offer only one recommended direction and at most one meaningfully different
 alternative. Do not offer several cosmetic variants of the same card layout.
 Save the result in `$TMP_DIR/design-system-decision.json`.
+
+## Round 3: Visual Asset Decision
+
+Read `visual-asset-planning.md` after the design-system recommendation. AI must
+analyze icon and image needs separately, present one recommendation and at most
+one meaningful alternative for each dimension, and pause for explicit user
+selection. If AI image generation is approved, pause again after candidate
+generation so the user can select the final image. Save the approved result in
+`$TMP_DIR/visual-asset-plan.json`. HTML authoring cannot begin while this gate is
+pending.
 
 ## Required Decision Record
 
