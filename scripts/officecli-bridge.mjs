@@ -6,7 +6,7 @@ import { promisify } from "node:util";
 import { parseArgs, requireArg } from "./runtime.mjs";
 
 const execFileAsync = promisify(execFile);
-const MAX_BUFFER = 64 * 1024 * 1024;
+const MAX_BUFFER = 256 * 1024 * 1024;
 
 function safeLabel(value) {
   return value.replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "command";
