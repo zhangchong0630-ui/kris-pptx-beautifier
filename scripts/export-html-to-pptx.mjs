@@ -103,6 +103,18 @@ function textInsets(item, scale) {
   };
 }
 
+function textLineSpacing(item) {
+  const text = item.text?.trim() || "";
+  const isCenteredSingleLineShape = item.kind === "shape-text"
+    && text.length > 0
+    && !/[\r\n]/.test(text)
+    && textAlignment(item) === "center"
+    && textVerticalAlignment(item) === "middle";
+  // PowerPoint applies paragraph line spacing inside vertical anchoring. Keep
+  // single-line centered labels at their natural line height for optical centering.
+  return isCenteredSingleLineShape ? 1 : item.style.lineHeight / item.style.fontSize;
+}
+
 function applyText(shape, item, fontScale) {
   shape.text = item.richRuns?.length
     ? item.richRuns.map((run) => ({
@@ -127,7 +139,7 @@ function applyText(shape, item, fontScale) {
     color: parseCssColor(item.style.color, item.style.opacity),
     alignment: textAlignment(item),
     verticalAlignment: textVerticalAlignment(item),
-    lineSpacing: item.style.lineHeight / item.style.fontSize,
+    lineSpacing: textLineSpacing(item),
     autoFit: "none",
     wrap: "square",
     insets: textInsets(item, fontScale),

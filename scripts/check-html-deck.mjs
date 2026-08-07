@@ -56,6 +56,21 @@ try {
           if (element.scrollWidth > element.clientWidth + 1 || element.scrollHeight > element.clientHeight + 1) {
             problems.push(`${id} clips or scrolls its text`);
           }
+          const text = (element.innerText || "").trim();
+          const isSingleLineCenteredShape = kind === "shape-text"
+            && text.length > 0
+            && !/[\r\n]/.test(text)
+            && (element.dataset.pptxAlign === "center" || style.textAlign === "center" || (style.display.includes("flex") && style.justifyContent === "center"))
+            && (element.dataset.pptxValign === "middle" || (style.display.includes("flex") && style.alignItems === "center"));
+          if (isSingleLineCenteredShape) {
+            const lineHeight = parseFloat(style.lineHeight);
+            if (!style.display.includes("flex") || style.alignItems !== "center" || style.justifyContent !== "center") {
+              problems.push(`${id} must use Flexbox for centered shape-text`);
+            }
+            if (!Number.isFinite(lineHeight) || Math.abs(lineHeight / fontSize - 1) > 0.05) {
+              problems.push(`${id} must use unit line-height for optical centering`);
+            }
+          }
           rects.push({ id, rect: { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom }, allow: element.hasAttribute("data-allow-overlap") });
         }
         if (kind !== "raster" && getComputedStyle(element).transform !== "none") {

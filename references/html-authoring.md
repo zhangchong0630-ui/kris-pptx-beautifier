@@ -38,7 +38,8 @@ Do not rely on CSS transforms, blend modes, clipping paths, masks, text gradient
 - Set explicit width, height, and line height.
 - Separate bullets into individual text leaves when different indentation or emphasis is needed.
 - Do not place a fill or border on an element marked `text`; add a sibling `shape` behind it.
-- Do not use a separate shape and manually offset text for a centered filled label. Use `shape-text`, Flexbox centering, and `data-pptx-valign="middle"`.
+- Do not use a separate shape and manually offset text for a centered filled label. Use `shape-text`, `display: flex`, `align-items: center`, `justify-content: center`, `text-align: center`, and `data-pptx-valign="middle"`.
+- For a single-line centered color strip, badge, threshold, or index block, set `line-height: 1` and zero padding. Never set `line-height` equal to the shape height; PowerPoint treats that as paragraph line spacing and shifts the optical center.
 - Real CSS padding is exported as PowerPoint text insets. Do not simulate padding by shifting peer text boxes independently.
 
 ## Repeated Layouts

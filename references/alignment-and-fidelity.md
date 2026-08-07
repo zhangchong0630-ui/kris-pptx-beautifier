@@ -23,9 +23,9 @@
   PowerPoint middle alignment and defaults normal text to top.
 - Use real CSS padding on editable text elements. The exporter maps computed
   padding to PowerPoint text insets.
-- Use `display:flex; align-items:center` for vertically centered single-line
-  labels. Add `justify-content:center` or `text-align:center` for horizontal
-  centering.
+- Use `display:flex; align-items:center; justify-content:center; text-align:center`
+  for centered single-line labels. Set `line-height: 1` and zero padding; never
+  use the element height as line height.
 - Set explicit line height, width, and height. Do not center text by guessing a
   top offset inside a separate rectangle.
 - Avoid mixed font families in a repeated group. Browser and PowerPoint font
@@ -63,7 +63,8 @@ The final PPTX must pass all of these gates:
    must be within the configured tolerance.
 3. Rendered HTML and rendered PPT images reviewed side by side at full size.
 4. A 200% inspection of repeated headers, color strips, table cells, peer cards,
-   and annotation columns.
+   annotation columns, and every centered number, threshold, or badge. Verify
+   the glyph's optical center, not only its text-box geometry.
 5. PowerPoint overflow test and re-import inspection.
 
 Passing overflow alone is not sufficient. A deck fails refined QA when peer
