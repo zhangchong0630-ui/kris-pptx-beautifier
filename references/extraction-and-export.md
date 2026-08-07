@@ -38,6 +38,14 @@ node "$BEAUTIFIER_SKILL/scripts/export-html-to-pptx.mjs" \
 
 Use `data-pptx-rich` on a text leaf when inline child spans need distinct bold, italic, underline, color, font, or link treatment. Unsupported CSS must be simplified or marked on the smallest parent with `data-pptx="raster"`.
 
+## Optional OfficeCLI Bridge
+
+When the `officecli` binary is available, use `references/officecli-integration.md` and
+`scripts/officecli-bridge.mjs` to collect a second, native-PPTX view of the source and final
+deck. OfficeCLI can expose stable object IDs, outlines, issues, stats, and an HTML rendering.
+Those results support diagnosis, but they do not replace the rendered source slides, content
+lock, HTML checks, or this exporter. Do not run a full native round-trip after export.
+
 Use `data-pptx="shape-text"` for filled labels whose text alignment must remain
 bound to the shape. The exporter saves a 1920x1080 HTML screenshot and an
 HTML-geometry ledger for every slide alongside the PPT render and layout JSON.

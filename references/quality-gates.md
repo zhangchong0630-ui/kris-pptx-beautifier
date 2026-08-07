@@ -67,3 +67,10 @@ Before delivery, record which regions were rasterized. A normal photograph expor
 
 Compare the PPTX render produced by our Artifact Tool exporter with the HTML render before merging.
 Overflow success alone does not satisfy refined visual QA.
+
+## Optional OfficeCLI QA
+
+When OfficeCLI is available, run the bridge in `qa` mode and review `validate`, `issues`,
+`stats`, and HTML output. Use stable object IDs for any targeted diagnosis. The absence of
+OfficeCLI is not a failure, but a failed command must be investigated or disclosed. Any approved
+native repair must be recorded and followed by a complete rerun of the quality gates.

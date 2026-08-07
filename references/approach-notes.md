@@ -19,6 +19,11 @@ The workflow was informed by:
 - License: MIT
 - Reviewed commit: `e103460915f0241f31c65d8e869e778dd38a49f4`
 
+- Project: `iOfficeAI/OfficeCLI`
+- Repository: https://github.com/iOfficeAI/OfficeCLI
+- License: Apache-2.0
+- Reviewed as an optional native-PPTX inspection and QA reference.
+
 Useful ideas retained at the workflow level:
 
 - author slides as browser-reviewable HTML;
@@ -29,6 +34,8 @@ Useful ideas retained at the workflow level:
 - author a fixed 1920x1080 browser stage and scale it as one unit;
 - provide a compact extraction view for text, images, notes, and reading order;
 - use computed DOM coordinates and styles for high-fidelity editable PPTX export.
+- use stable native object IDs, structured issue reports, and a CLI-driven validation pass as a
+  secondary diagnostic layer.
 
 ## Deliberate Differences
 
@@ -41,5 +48,9 @@ Useful ideas retained at the workflow level:
 - Add a machine-checked element logic map before selecting component patterns.
 - Preserve source relationships and forbid invented navigation or application chrome.
 - Implement DOM measurement and editable export in our own Artifact Tool exporter.
+- Keep OfficeCLI optional and use it only for native inspection, validation, and explicitly
+  approved small repairs; do not run two competing full-deck layout engines.
 
-No source code from the reference projects is copied into this skill. Neither reference skill nor its runtime package is installed or invoked.
+No source code from the reference projects is copied into this skill. The OfficeCLI binary,
+runtime package, and separate `officecli-pptx` skill are not installed or bundled here. The
+integration is a local bridge around the upstream CLI when a user has it available.

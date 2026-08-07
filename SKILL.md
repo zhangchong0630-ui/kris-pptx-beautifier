@@ -6,7 +6,8 @@ description: >-
   the source PPTX; lock business content and map each page's element logic; select a suitable
   frontend design system; separately plan icons and images with AI recommendations and user
   approval; rebuild selected or all slides as fixed 1920x1080 HTML; export editable PowerPoint
-  objects with strict alignment fidelity; and verify the final PPTX visually. Use for
+  objects with strict alignment fidelity; optionally use OfficeCLI for native object inspection
+  and secondary QA; and verify the final PPTX visually. Use for
   美化PPT, 改PPT样式, 重新排版PPT, 同品牌重构, PPT转HTML再回写PPTX, or beautifying specified pages.
 ---
 
@@ -30,12 +31,21 @@ Rebuild an existing PPTX as reviewable HTML and return an editable PPTX copy. Th
 - Use a 12-column grid and 8px spacing system unless the source template provides a stronger grid.
 - Never hand-center text over a separate shape when a single editable shape-with-text can preserve alignment.
 - Render and inspect every final slide before delivery.
+- Treat OfficeCLI as an optional secondary native-PPTX inspection and QA layer. It must not
+  replace the HTML-first design route or override the content lock and logic map.
+- Never run a full OfficeCLI round-trip rewrite after HTML export. Use native OfficeCLI edits
+  only for a small, user-approved repair, and rerun the complete QA afterward.
 
 ## Required Companion Skill
 
 Load the installed `presentations` skill before doing PPTX work. Follow its source handling, Artifact Tool setup, QA, and delivery rules. This skill adds the HTML-first same-brand rebuild route.
 
 If the approved visual-asset plan includes AI-generated images, load the installed `imagegen` skill before creating those assets. Never invoke image generation before the user approves both the image strategy and its intended slide roles.
+
+OfficeCLI is optional. When the `officecli` binary is available, read
+`references/officecli-integration.md` and use `scripts/officecli-bridge.mjs` for secondary
+source/final inspection. Do not install or copy OfficeCLI source or its skill into this skill.
+If the binary is unavailable, continue with the existing Artifact Tool workflow.
 
 ## Workspace
 
@@ -49,6 +59,7 @@ SOURCE_PPTX=<absolute source path>
 FINAL_PPTX=<absolute output copy path>
 SELECTED_SLIDES=<1-based list such as 3,5-7; use all pages for a full rebuild>
 STYLE_MODE=brand-rebuild
+OFFICECLI_BIN=<optional absolute path to officecli, or leave unset>
 ```
 
 Copy `assets/deck-template.html` to `$TMP_DIR/deck.html`. Keep intermediate inspection, HTML, ledgers, previews, and QA under `$TMP_DIR`; write only the final PPTX to `$FINAL_PPTX`.
@@ -93,6 +104,18 @@ Review the full montage and every selected source slide individually. Use:
 - `extracted-slides.json` for compact text, image, notes, and reading-order analysis;
 - per-slide layout JSON and rendered slides as the visual authority;
 - extracted media for authentic source assets.
+
+If OfficeCLI is installed, run its optional inspection bridge after the Artifact Tool
+inspection. Use its outline, stable IDs, text, stats, issues, and HTML output as secondary
+object-level evidence; the rendered source slides and the extracted inspection bundle remain
+the visual and content authority.
+
+```bash
+node "$BEAUTIFIER_SKILL/scripts/officecli-bridge.mjs" \
+  --mode inspect \
+  --pptx "$SOURCE_PPTX" \
+  --out "$TMP_DIR/officecli/source"
+```
 
 Create `$TMP_DIR/content-lock.json` using `references/content-lock.md`. Give every preserved source item a stable `sourceId`. Copy source speaker notes to the corresponding HTML slide; append new `[Sources]` blocks rather than replacing notes.
 
@@ -230,6 +253,18 @@ node "$BEAUTIFIER_SKILL/scripts/verify-partial-pptx.mjs" \
   --out "$TMP_DIR/partial-qa"
 ```
 
+When OfficeCLI is available, run the optional native QA bridge and inspect its `validate`,
+`issues`, `stats`, and HTML outputs. If it reports a real issue, either fix it through the
+existing export workflow or record a small, explicitly approved native repair and rerun all
+final QA. Never silently discard a failed OfficeCLI check.
+
+```bash
+node "$BEAUTIFIER_SKILL/scripts/officecli-bridge.mjs" \
+  --mode qa \
+  --pptx "$FINAL_PPTX" \
+  --out "$TMP_DIR/officecli/final"
+```
+
 Compare every selected final slide with its source, content lock, logic invariant, and HTML render. Apply `references/alignment-and-fidelity.md`: inspect HTML/PPT geometry, repeated edges and gaps, shape-text internal alignment, rendered output at full size, and critical regions at 200%. Visual differences are expected; semantic differences require explicit permission.
 
 ### 10. Deliver
@@ -255,7 +290,15 @@ Use the presentations skill's exact output citation format.
 - If generated-image candidates are not approved, keep the source image or use no image; never silently select a candidate.
 - If HTML and PPTX renders diverge materially, simplify the DOM or rasterize only the smallest unsupported region with a recorded reason.
 - If a font is unavailable, use an approved substitute and verify wrapping again.
+- If the optional OfficeCLI bridge is unavailable, disclose that it was skipped; this is not
+  a workflow failure.
+- If OfficeCLI reports a failure, investigate and disclose it. Do not use a full native rewrite
+  to hide an HTML/export discrepancy.
 
 ## Attribution
 
 The workflow was informed by the MIT-licensed `JimLiu/baoyu-design`, `zarazhangrui/frontend-slides`, and `atharva9167j/dom-to-pptx` projects. See `references/approach-notes.md`.
+The optional native inspection layer was informed by the Apache-2.0-licensed
+`iOfficeAI/OfficeCLI` project. No OfficeCLI source code, runtime package, or skill is copied
+into or installed by this workflow. See `references/approach-notes.md` and
+`references/officecli-integration.md`.
