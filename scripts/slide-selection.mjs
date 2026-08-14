@@ -1,3 +1,5 @@
+const MAX_RANGE_SPAN = 1000;
+
 export function parseSlideSelection(value, slideCount) {
   if (typeof value !== "string" || !value.trim()) {
     throw new Error("Slide selection is required, for example: 2,4-6,9");
@@ -18,6 +20,13 @@ export function parseSlideSelection(value, slideCount) {
       const start = Number(range[1]);
       const end = Number(range[2]);
       if (start > end) throw new Error(`Descending slide range is not allowed: ${part}`);
+      if (Number.isInteger(slideCount) && end > slideCount) {
+        throw new Error(`Slide range ${part} exceeds the source deck's ${slideCount} slides`);
+      }
+      const span = end - start + 1;
+      if (span > MAX_RANGE_SPAN) {
+        throw new Error(`Slide range ${part} expands to ${span} slides; keep ranges under ${MAX_RANGE_SPAN}`);
+      }
       for (let page = start; page <= end; page += 1) selected.add(page);
       continue;
     }

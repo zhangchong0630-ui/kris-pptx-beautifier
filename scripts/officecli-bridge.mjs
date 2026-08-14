@@ -7,6 +7,7 @@ import { parseArgs, requireArg } from "./runtime.mjs";
 
 const execFileAsync = promisify(execFile);
 const MAX_BUFFER = 256 * 1024 * 1024;
+const COMMAND_TIMEOUT_MS = 60000;
 
 function safeLabel(value) {
   return value.replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "command";
@@ -42,6 +43,8 @@ async function runCommand(binary, command, outDir, index) {
     const result = await execFileAsync(binary, command, {
       maxBuffer: MAX_BUFFER,
       windowsHide: true,
+      timeout: COMMAND_TIMEOUT_MS,
+      killSignal: "SIGKILL",
     });
     await fs.writeFile(stdoutPath, result.stdout || "", "utf8");
     await fs.writeFile(stderrPath, result.stderr || "", "utf8");
@@ -80,6 +83,8 @@ async function main() {
     const result = await execFileAsync(binary, ["--version"], {
       maxBuffer: 1024 * 1024,
       windowsHide: true,
+      timeout: COMMAND_TIMEOUT_MS,
+      killSignal: "SIGKILL",
     });
     version = (result.stdout || result.stderr || "").trim();
   } catch (error) {

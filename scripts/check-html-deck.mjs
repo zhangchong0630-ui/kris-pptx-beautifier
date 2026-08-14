@@ -5,6 +5,9 @@ import { launchBrowser, loadRuntimePackage, parseArgs, requireArg } from "./runt
 const args = parseArgs(process.argv.slice(2));
 const url = requireArg(args, "url");
 const minimumBodyPx = Number(args["min-font"] ?? 30);
+if (!Number.isFinite(minimumBodyPx) || minimumBodyPx <= 0) {
+  throw new Error(`--min-font must be a positive number, got ${args["min-font"]}`);
+}
 const { chromium } = loadRuntimePackage("playwright");
 const browser = await launchBrowser(chromium, { headless: true });
 const findings = [];
@@ -15,6 +18,9 @@ try {
   await page.evaluate(() => document.fonts?.ready);
   await page.evaluate(() => window.__pptxSetExportMode?.(true));
   const slideCount = await page.locator("[data-pptx-slide]").count();
+  if (slideCount === 0) {
+    findings.push({ slide: 0, message: "No [data-pptx-slide] elements found" });
+  }
 
   for (let index = 0; index < slideCount; index += 1) {
     await page.evaluate((slideIndex) => {
@@ -89,7 +95,7 @@ try {
         if (visible(element) && !element.closest("[data-pptx]")) problems.push(`Visible ${element.tagName.toLowerCase()} is unmarked`);
       }
 
-      const near = (values, tolerance = 1) => Math.max(...values) - Math.min(...values) <= tolerance;
+      const near = (values, tolerance = 1) => values.length > 0 && Math.max(...values) - Math.min(...values) <= tolerance;
       const cluster = (items, key, tolerance = 2) => {
         const groups = [];
         for (const item of [...items].sort((a, b) => a[key] - b[key])) {

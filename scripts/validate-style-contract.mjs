@@ -30,13 +30,21 @@ const browser = await launchBrowser(chromium, { headless: true });
 const violations = [];
 
 try {
-  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
   await page.goto(url, { waitUntil: "networkidle" });
   await page.evaluate(() => document.fonts?.ready);
   const slideCount = await page.locator("[data-pptx-slide]").count();
+  if (slideCount === 0) {
+    violations.push({ slide: 0, id: null, rule: "deck", value: "No [data-pptx-slide] elements found" });
+  }
 
   for (let slideIndex = 0; slideIndex < slideCount; slideIndex += 1) {
-    await page.evaluate((index) => window.__pptxShowSlide?.(index), slideIndex);
+    await page.evaluate((index) => {
+      if (typeof window.__pptxShowSlide === "function") window.__pptxShowSlide(index);
+      else document.querySelectorAll("[data-pptx-slide]").forEach((slide, i) => {
+        slide.style.display = i === index ? "block" : "none";
+      });
+    }, slideIndex);
     const items = await page.locator("[data-pptx-slide]").nth(slideIndex).locator("[data-pptx]").evaluateAll((elements) => elements.map((element, index) => {
       const style = getComputedStyle(element);
       const colors = [];
@@ -64,7 +72,7 @@ try {
         const color = normalizeHex(rawColor);
         if (color && allowedColors.size && !allowedColors.has(color)) violations.push({ slide: slideIndex + 1, id: item.id, rule: "color", value: color });
       }
-      if (item.kind === "text" && allowedFonts.size && !allowedFonts.has(item.fontFamily.toLowerCase())) {
+      if ((item.kind === "text" || item.kind === "shape-text") && allowedFonts.size && !allowedFonts.has(item.fontFamily.toLowerCase())) {
         violations.push({ slide: slideIndex + 1, id: item.id, rule: "font", value: item.fontFamily });
       }
       if (Number.isFinite(contract.maxBorderRadiusPx) && item.borderRadius > contract.maxBorderRadiusPx + 0.1) {

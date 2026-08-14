@@ -23,8 +23,20 @@ for (const htmlFile of htmlFiles) {
     findings.push({ slide: stem, message: `Missing ${pptFile}` });
     continue;
   }
-  const expected = JSON.parse(await fs.readFile(path.join(qaDir, htmlFile), "utf8"));
-  const actual = JSON.parse(await fs.readFile(path.join(qaDir, pptFile), "utf8"));
+  let expected;
+  let actual;
+  try {
+    expected = JSON.parse(await fs.readFile(path.join(qaDir, htmlFile), "utf8"));
+  } catch (error) {
+    findings.push({ slide: stem, message: `Failed to parse ${htmlFile}: ${error.message}` });
+    continue;
+  }
+  try {
+    actual = JSON.parse(await fs.readFile(path.join(qaDir, pptFile), "utf8"));
+  } catch (error) {
+    findings.push({ slide: stem, message: `Failed to parse ${pptFile}: ${error.message}` });
+    continue;
+  }
   const byName = new Map((actual.elements || []).map((element) => [element.name, element]));
   const usedFallbackElements = new Set();
 

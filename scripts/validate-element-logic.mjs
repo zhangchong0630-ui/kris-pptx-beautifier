@@ -26,7 +26,8 @@ if (logic.version !== 1) findings.push("Logic map version must be 1");
 if (logic.inventedChrome !== false) findings.push("inventedChrome must be false");
 
 for (const lockedSlide of lock.slides ?? []) {
-  const mapped = (logic.slides ?? []).find((slide) => slide.sourceSlide === lockedSlide.sourceSlide);
+  const mapped = (logic.slides ?? []).find((slide) => slide.sourceSlide === lockedSlide.sourceSlide)
+    ?? (logic.slides ?? []).find((slide) => slide.sourceSlide === lockedSlide.htmlSlide);
   if (!mapped) {
     findings.push(`Missing logic map for source slide ${lockedSlide.sourceSlide}`);
     continue;

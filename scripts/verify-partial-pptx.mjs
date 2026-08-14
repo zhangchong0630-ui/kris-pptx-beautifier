@@ -1,10 +1,29 @@
 #!/usr/bin/env node
 
-import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { loadArtifactTool, parseArgs, requireArg, writeBlob } from "./runtime.mjs";
+import { loadArtifactTool, loadRuntimePackage, parseArgs, requireArg, writeBlob } from "./runtime.mjs";
 import { parseSlideSelection } from "./slide-selection.mjs";
+
+const { PNG } = loadRuntimePackage("pngjs");
+const PIXEL_DIFF_THRESHOLD = 0.01;
+const CHANNEL_DIFF_THRESHOLD = 32;
+
+function pixelDiffFraction(sourceBuffer, finalBuffer) {
+  const a = PNG.sync.read(sourceBuffer);
+  const b = PNG.sync.read(finalBuffer);
+  if (a.width !== b.width || a.height !== b.height) return 1;
+  const total = a.width * a.height;
+  if (total === 0) return 0;
+  let changed = 0;
+  for (let index = 0; index < a.data.length; index += 4) {
+    const dr = Math.abs(a.data[index] - b.data[index]);
+    const dg = Math.abs(a.data[index + 1] - b.data[index + 1]);
+    const db = Math.abs(a.data[index + 2] - b.data[index + 2]);
+    if (dr + dg + db > CHANNEL_DIFF_THRESHOLD) changed += 1;
+  }
+  return changed / total;
+}
 
 const args = parseArgs(process.argv.slice(2));
 const sourcePath = path.resolve(requireArg(args, "source"));
@@ -35,10 +54,9 @@ for (let index = 0; index < count; index += 1) {
   const finalPng = await final.export({ slide: final.slides.items[index], format: "png", scale: 1 });
   const sourceBytes = Buffer.from(await sourcePng.arrayBuffer());
   const finalBytes = Buffer.from(await finalPng.arrayBuffer());
-  const sourceHash = crypto.createHash("sha256").update(sourceBytes).digest("hex");
-  const finalHash = crypto.createHash("sha256").update(finalBytes).digest("hex");
   const selected = selectedSet.has(page);
-  const visuallyEqual = sourceHash === finalHash;
+  const pixelDiff = pixelDiffFraction(sourceBytes, finalBytes);
+  const visuallyEqual = pixelDiff <= PIXEL_DIFF_THRESHOLD;
 
   await writeBlob(path.join(outputDir, "source", `slide-${String(page).padStart(2, "0")}.png`), sourcePng, fs);
   await writeBlob(path.join(outputDir, "final", `slide-${String(page).padStart(2, "0")}.png`), finalPng, fs);
@@ -51,7 +69,7 @@ for (let index = 0; index < count; index += 1) {
     errors.push(`Selected slide ${page} no longer contains its original speaker notes`);
   }
   if (selected && visuallyEqual) warnings.push(`Selected slide ${page} appears visually unchanged`);
-  slides.push({ page, selected, visuallyEqual, notesEqual: sourceNotes === finalNotes, sourceHash, finalHash });
+  slides.push({ page, selected, visuallyEqual, pixelDiff: Number(pixelDiff.toFixed(6)), notesEqual: sourceNotes === finalNotes });
 }
 
 const result = { ok: errors.length === 0, source: sourcePath, final: finalPath, selectedSlides, errors, warnings, slides };

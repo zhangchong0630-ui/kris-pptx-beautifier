@@ -8,6 +8,14 @@ const args = parseArgs(process.argv.slice(2));
 const url = requireArg(args, "url");
 const lockPath = path.resolve(requireArg(args, "lock"));
 const lock = JSON.parse(await fs.readFile(lockPath, "utf8"));
+if (!Array.isArray(lock.slides)) {
+  throw new Error(`Lock file ${lockPath} must contain a "slides" array`);
+}
+for (const slideLock of lock.slides) {
+  if (!Number.isInteger(slideLock.htmlSlide)) {
+    throw new Error(`Lock entry in ${lockPath} must have an integer "htmlSlide"`);
+  }
+}
 const { chromium } = loadRuntimePackage("playwright");
 const browser = await launchBrowser(chromium, { headless: true });
 const errors = [];
@@ -17,7 +25,7 @@ function escapeAttributeValue(value) {
 }
 
 try {
-  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } });
   await page.goto(url, { waitUntil: "networkidle" });
   const htmlSlideCount = await page.locator("[data-pptx-slide]").count();
   if (lock.slideCountPolicy === "preserve" && htmlSlideCount !== lock.slides.length) {
