@@ -36,9 +36,35 @@ Rebuild an existing PPTX as reviewable HTML and return an editable PPTX copy. Th
 - Never run a full OfficeCLI round-trip rewrite after HTML export. Use native OfficeCLI edits
   only for a small, user-approved repair, and rerun the complete QA afterward.
 
+## Environment Prerequisites
+
+Required to run this skill's scripts:
+
+- Node.js ≥ 18.
+- `playwright`, `@oai/artifact-tool`, `jszip`, and `pngjs` resolvable by
+  `scripts/runtime.mjs`.
+- A Chrome/Edge browser, or `PPTX_BEAUTIFIER_BROWSER` pointing to one, or
+  Playwright's bundled Chromium (`npx playwright install chromium`).
+
+`scripts/runtime.mjs` resolves runtime packages in this order: a local
+`node_modules` next to the scripts, then `$PPTX_BEAUTIFIER_NODE_MODULES`, then
+`$CODEX_RUNTIME_NODE_MODULES`, then
+`~/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules`.
+To run outside a Codex runtime, install the dependencies once:
+
+```bash
+npm init -y
+npm install playwright @oai/artifact-tool jszip pngjs
+npx playwright install chromium
+```
+
 ## Required Companion Skill
 
-Load the installed `presentations` skill before doing PPTX work. Follow its source handling, Artifact Tool setup, QA, and delivery rules. This skill adds the HTML-first same-brand rebuild route.
+The `presentations` skill is RECOMMENDED for its Artifact Tool workspace setup, QA, and
+delivery rules, but is NOT required to run this skill's scripts. If it is unavailable,
+skip its initialization and its `mark_artifact_operation_started.mjs` step; the scripts
+below resolve their own dependencies and continue. If `@oai/artifact-tool` itself cannot
+be loaded, stop and report the blocker.
 
 If the approved visual-asset plan includes AI-generated images, load the installed `imagegen` skill before creating those assets. Never invoke image generation before the user approves both the image strategy and its intended slide roles.
 
@@ -53,18 +79,22 @@ Define:
 
 ```bash
 BEAUTIFIER_SKILL=<absolute path to this skill>
-PRESENTATIONS_SKILL=<absolute path to the active presentations skill>
+PRESENTATIONS_SKILL=<absolute path to the active presentations skill, if installed>
 TMP_DIR=<absolute task directory>
 SOURCE_PPTX=<absolute source path>
 FINAL_PPTX=<absolute output copy path>
 SELECTED_SLIDES=<1-based list such as 3,5-7; use all pages for a full rebuild>
 STYLE_MODE=brand-rebuild
 OFFICECLI_BIN=<optional absolute path to officecli, or leave unset>
+DECK_URL=http://127.0.0.1:8123/deck.html
 ```
 
 Copy `assets/deck-template.html` to `$TMP_DIR/deck.html`. Keep intermediate inspection, HTML, ledgers, previews, and QA under `$TMP_DIR`; write only the final PPTX to `$FINAL_PPTX`.
 
-Initialize `$TMP_DIR` with the presentations skill's `container_tools/setup_artifact_tool_workspace.mjs`.
+If the `presentations` skill is installed, follow its Artifact Tool workspace
+initialization (`load_workspace_dependencies`, `RUNTIME_*` variables, and
+`mark_artifact_operation_started.mjs` before the first create/edit). Otherwise skip it —
+`scripts/runtime.mjs` resolves the runtime packages itself.
 
 ## Workflow
 
@@ -186,7 +216,14 @@ Read `references/html-authoring.md`, `references/alignment-and-fidelity.md`, and
 
 ### 7. Validate Before Export
 
-Serve `$TMP_DIR` over HTTP and run:
+Serve `$TMP_DIR` over HTTP (do NOT use `file://`; the scripts rely on
+`document.fonts.ready` and network requests):
+
+```bash
+python3 -m http.server 8123 -d "$TMP_DIR" &
+```
+
+Then run:
 
 ```bash
 node "$BEAUTIFIER_SKILL/scripts/validate-content.mjs" \
@@ -208,16 +245,25 @@ Also fix every failed equal-edge, equal-size, equal-gap, text-anchor, and intern
 
 Use this skill's own DOM-to-PPTX exporter. It measures the final 1920x1080 browser DOM, reads computed styles, and creates editable Artifact Tool text, shapes, and images. It does not invoke either reference project.
 
+The exporter defaults to 1280x720 (the standard 16:9 PPTX EMU size at 96 dpi). For
+`replace-in-copy` merges the replacement EMU size MUST equal the source page EMU
+size, so read the source size from `$TMP_DIR/source-inspection/source-summary.json`
+(`widthEmu`/`heightEmu`) and pass it explicitly:
+
 ```bash
 node "$BEAUTIFIER_SKILL/scripts/export-html-to-pptx.mjs" \
   --url "$DECK_URL" \
   --out "$TMP_DIR/replacement.pptx" \
-  --qa-dir "$TMP_DIR/html-export-qa"
+  --qa-dir "$TMP_DIR/html-export-qa" \
+  --pptx-width <source width in px> \
+  --pptx-height <source height in px>
 
 node "$BEAUTIFIER_SKILL/scripts/compare-export-layout.mjs" \
   --qa-dir "$TMP_DIR/html-export-qa" \
   --tolerance 1
 ```
+
+(EMU = px * 9525; 1280x720 px = 12192000x6858000 EMU.)
 
 Follow `intake-contract.json`:
 

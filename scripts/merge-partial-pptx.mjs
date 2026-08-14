@@ -38,12 +38,13 @@ function collectReferenceIds(node, key, found = new Set()) {
   return found;
 }
 
-function replaceExactStrings(node, mapping) {
+function replaceReferences(node, referenceKey, mapping) {
   if (!node || typeof node !== "object") return;
-  for (const [key, value] of Object.entries(node)) {
-    if (typeof value === "string" && mapping.has(value)) node[key] = mapping.get(value);
-    else replaceExactStrings(value, mapping);
+  const reference = node[referenceKey];
+  if (reference && typeof reference === "object" && typeof reference.id === "string" && mapping.has(reference.id)) {
+    reference.id = mapping.get(reference.id);
   }
+  for (const value of Object.values(node)) replaceReferences(value, referenceKey, mapping);
 }
 
 function uniqueResourceId(oldId, page, used) {
@@ -70,7 +71,7 @@ function mergeReferencedResources(slideProto, referenceKey, sourceListName, used
     sourceProto[sourceListName].push(cloned);
     mapping.set(oldId, newId);
   }
-  replaceExactStrings(slideProto, mapping);
+  replaceReferences(slideProto, referenceKey, mapping);
   return [...mapping.entries()].map(([from, to]) => ({ from, to }));
 }
 
@@ -79,7 +80,9 @@ for (const [replacementIndex, targetPage] of selectedSlides.entries()) {
   const original = sourceProto.slides[targetIndex];
   const incoming = structuredClone(replacementProto.slides[replacementIndex]);
   if (original.widthEmu !== incoming.widthEmu || original.heightEmu !== incoming.heightEmu) {
-    throw new Error(`Replacement slide ${replacementIndex + 1} size does not match source page ${targetPage}`);
+    throw new Error(
+      `Replacement slide ${replacementIndex + 1} size (${incoming.widthEmu}x${incoming.heightEmu} EMU) does not match source page ${targetPage} (${original.widthEmu}x${original.heightEmu} EMU). Re-export with --pptx-width/--pptx-height matching the source (EMU = px * 9525).`,
+    );
   }
   const images = mergeReferencedResources(incoming, "imageReference", "images", usedImageIds, targetPage);
   const charts = mergeReferencedResources(incoming, "chartReference", "charts", usedChartIds, targetPage);

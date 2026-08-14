@@ -1,0 +1,12 @@
+{
+  "name": "kris-pptx-beautifier",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "HTML-first same-brand PPTX beautifier skill (see SKILL.md)",
+  "dependencies": {
+    "playwright": "^1.45.0",
+    "jszip": "^3.10.1",
+    "pngjs": "^7.0.0"
+  }
+}

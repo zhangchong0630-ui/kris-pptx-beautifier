@@ -43,10 +43,15 @@ const inspection = await presentation.inspect({
 });
 await fs.writeFile(path.join(outputDir, "inspection.ndjson"), inspection.ndjson, "utf8");
 
-const inspectionRows = inspection.ndjson
-  .split(/\r?\n/)
-  .filter(Boolean)
-  .map((line) => JSON.parse(line));
+const inspectionRows = [];
+for (const line of inspection.ndjson.split(/\r?\n/)) {
+  if (!line.trim()) continue;
+  try {
+    inspectionRows.push(JSON.parse(line));
+  } catch {
+    // Skip a truncated or malformed line rather than crashing the whole inspection.
+  }
+}
 const extractedSlides = new Map(selectedSlides.map((slideNumber) => [slideNumber, {
   number: slideNumber,
   slideId: null,
@@ -94,16 +99,28 @@ const JSZip = loadRuntimePackage("jszip");
 const pptxBytes = await fs.readFile(sourcePptx);
 const zip = await JSZip.loadAsync(pptxBytes);
 const mediaFiles = [];
+const usedMediaNames = new Set();
 for (const [entryName, entry] of Object.entries(zip.files)) {
   if (!entryName.startsWith("ppt/media/") || entry.dir) continue;
-  const target = path.join(outputDir, "media", path.basename(entryName));
-  await fs.writeFile(target, await entry.async("nodebuffer"));
-  mediaFiles.push(path.basename(target));
+  const baseName = path.basename(entryName);
+  let targetName = baseName;
+  let counter = 1;
+  while (usedMediaNames.has(targetName)) {
+    const extension = path.extname(baseName);
+    targetName = `${path.basename(baseName, extension)}-${counter}${extension}`;
+    counter += 1;
+  }
+  usedMediaNames.add(targetName);
+  await fs.writeFile(path.join(outputDir, "media", targetName), await entry.async("nodebuffer"));
+  mediaFiles.push(targetName);
 }
 
+const firstSlideProto = presentation.toProto()?.slides?.[0];
 const summary = {
   sourcePptx,
   slideCount: presentation.slides.items.length,
+  widthEmu: firstSlideProto?.widthEmu ?? null,
+  heightEmu: firstSlideProto?.heightEmu ?? null,
   selectedSlides,
   slides: slideSummaries,
   compactExtraction: "extracted-slides.json",

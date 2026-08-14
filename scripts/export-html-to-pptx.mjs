@@ -59,7 +59,9 @@ function parseFill(backgroundImage, backgroundColor, opacity = 1) {
 
 function shadowToken(value) {
   if (!value || value === "none") return "shadow-none";
-  const blur = Number(value.match(/(?:^|\s)(\d+(?:\.\d+)?)px(?:\s|$)/)?.[1] ?? 8);
+  const cleaned = value.replace(/\binset\b/gi, "");
+  const lengths = cleaned.match(/-?\d+(?:\.\d+)?(?:px|pt|rem|em)/g) ?? [];
+  const blur = lengths.length >= 3 ? Math.abs(parseFloat(lengths[2])) : 0;
   if (blur <= 4) return "shadow-sm";
   if (blur <= 12) return "shadow-md";
   return "shadow-lg";
@@ -110,8 +112,6 @@ function textLineSpacing(item) {
     && !/[\r\n]/.test(text)
     && textAlignment(item) === "center"
     && textVerticalAlignment(item) === "middle";
-  // PowerPoint applies paragraph line spacing inside vertical anchoring. Keep
-  // single-line centered labels at their natural line height for optical centering.
   return isCenteredSingleLineShape ? 1 : item.style.lineHeight / item.style.fontSize;
 }
 
@@ -130,6 +130,9 @@ function applyText(shape, item, fontScale) {
       link: run.link ? { uri: run.link, isExternal: true } : undefined,
     }))
     : item.text;
+  if (typeof shape.text !== "object" || shape.text === null) {
+    throw new Error(`artifact-tool shape.text getter returned ${typeof shape.text}; expected a mutable text frame object`);
+  }
   shape.text.style = {
     fontSize: item.style.fontSize * fontScale,
     typeface: item.style.fontFamily || "Arial",
@@ -174,6 +177,9 @@ try {
   if (metadata.width !== 1920 || metadata.height !== 1080) {
     throw new Error(`HTML slide stage must be exactly 1920x1080, got ${metadata.width}x${metadata.height}`);
   }
+  if (metadata.notes.length > 0 && metadata.notes.length !== metadata.slideCount) {
+    throw new Error(`#speaker-notes array length ${metadata.notes.length} does not match slide count ${metadata.slideCount}`);
+  }
 
   const pptxWidth = Number(args["pptx-width"] ?? 1280);
   const pptxHeight = Number(args["pptx-height"] ?? 720);
@@ -197,7 +203,7 @@ try {
         slide.style.display = i === index ? "block" : "none";
       });
     }, slideIndex);
-    await page.waitForTimeout(80);
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
 
     const captured = await page.locator("[data-pptx-slide]").nth(slideIndex).evaluate((slide, currentSlideIndex) => {
       const root = slide.getBoundingClientRect();
@@ -293,7 +299,7 @@ try {
           line: item.style.borderStyle === "none" || item.style.borderWidth === 0
             ? { style: "solid", fill: "none", width: 0 }
             : { style: "solid", fill: parseCssColor(item.style.borderColor, item.style.opacity), width: item.style.borderWidth * fontScale },
-            borderRadius: ["rect", "roundRect", "textbox"].includes(geometry) && radius ? radius * fontScale : undefined,
+          borderRadius: ["rect", "roundRect", "textbox"].includes(geometry) && radius ? radius * fontScale : undefined,
           shadow: shadowToken(item.style.boxShadow),
         });
         if (geometry === "line") shape.fill = "none";
@@ -323,35 +329,44 @@ try {
         applyText(shape, item, fontScale);
       } else if (item.kind === "image") {
         let added = false;
+        let rasterizeReason = "no src";
         if (item.src) {
           try {
-            const response = await page.request.get(item.src);
-            if (response.ok()) {
-              const bytes = await response.body();
-              slide.images.add({
-                blob: bytes,
-                contentType: response.headers()["content-type"]?.split(";")[0] || "image/png",
-                alt: item.alt || item.sourceId || "Slide image",
-                fit: item.style.objectFit === "contain" ? "contain" : "cover",
-                position: position(item.rect, scaleX, scaleY),
-                geometry: item.style.borderRadius > 0 ? "roundRect" : "rect",
-                borderRadius: item.style.borderRadius ? item.style.borderRadius * fontScale : undefined,
-              });
-              added = true;
+            const absoluteSrc = new URL(item.src, page.url()).href;
+            const response = await page.request.get(absoluteSrc);
+            if (!response.ok()) {
+              rasterizeReason = `HTTP ${response.status()}`;
+            } else {
+              const contentType = response.headers()["content-type"]?.split(";")[0] || "image/png";
+              if (!contentType.startsWith("image/")) {
+                rasterizeReason = `unexpected content-type ${contentType}`;
+              } else {
+                const bytes = await response.body();
+                slide.images.add({
+                  blob: bytes,
+                  contentType,
+                  alt: item.alt || item.sourceId || "Slide image",
+                  fit: item.style.objectFit === "contain" ? "contain" : "cover",
+                  position: position(item.rect, scaleX, scaleY),
+                  geometry: item.style.borderRadius > 0 ? "roundRect" : "rect",
+                  borderRadius: item.style.borderRadius ? item.style.borderRadius * fontScale : undefined,
+                });
+                added = true;
+              }
             }
-          } catch {
-            // Use the element screenshot fallback below.
+          } catch (error) {
+            rasterizeReason = error.message;
           }
         }
         if (!added) {
           const png = await page.locator(`[data-export-id="${item.exportId}"]`).screenshot({ type: "png", omitBackground: true });
           slide.images.add({ blob: png, contentType: "image/png", alt: item.alt || "Slide image", fit: "contain", position: position(item.rect, scaleX, scaleY) });
-          rasterized.push(item.sourceId || item.exportId);
+          rasterized.push({ id: item.sourceId || item.exportId, reason: rasterizeReason });
         }
       } else if (item.kind === "raster") {
         const png = await page.locator(`[data-export-id="${item.exportId}"]`).screenshot({ type: "png", omitBackground: true });
         slide.images.add({ blob: png, contentType: "image/png", alt: item.alt || item.sourceId || "Rasterized slide region", fit: "contain", position: position(item.rect, scaleX, scaleY) });
-        rasterized.push(item.sourceId || item.exportId);
+        rasterized.push({ id: item.sourceId || item.exportId, reason: "data-pptx=raster" });
       } else {
         throw new Error(`Unsupported data-pptx kind: ${item.kind}`);
       }

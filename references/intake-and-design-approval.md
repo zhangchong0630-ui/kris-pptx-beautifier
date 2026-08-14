@@ -34,13 +34,18 @@ but allow the user to answer `AI decide` for any item.
      architecture, platform capability, monitoring, or digital transformation.
    - `minimal-editorial`: fewer containers, more whitespace, stronger statements
      and imagery. Example: strategy narrative, keynote, or product proposition.
-   - `AI recommend after inspection` (recommended when the source is mixed).
+   - `AI-recommend` (recommended when the source is mixed).
 5. **Design approval mode**
    - `recommend-and-confirm` (recommended): inspect first, then pause with one
      recommended system and one materially different alternative.
    - `AI-direct`: record the decision and continue without another approval.
    - `preview-first`: prepare one representative HTML page for approval before
      authoring the remaining pages.
+6. **Editability** (required; defaults to `editable-first` when not answered)
+   - `editable-first` (recommended): keep every element editable; disclose every
+     rasterized region.
+   - `mixed-approved`: allow rasterizing complex charts and diagrams only after
+     explicit approval.
 
 Ask only when not already known:
 
@@ -48,8 +53,6 @@ Ask only when not already known:
   internal report, training, roadshow, or large-screen display.
 - Assets that must remain untouched: logo, screenshots, charts, photographs,
   compliance text, footnotes, page furniture, or speaker notes.
-- Editability requirement: fully editable by default; disclose every rasterized
-  chart or complex region.
 
 If the user explicitly says to use defaults, use:
 
