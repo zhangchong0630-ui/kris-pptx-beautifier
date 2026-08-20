@@ -119,6 +119,8 @@ node "$BEAUTIFIER_SKILL/scripts/validate-project-contracts.mjs" \
 
 Read `references/source-style-modes.md`. A new composition is allowed only when the source relationship logic remains unchanged.
 
+Also read `references/design-grammar.md` and `references/copywriting-rules.md` — the design grammar and copy rules that apply to every rebuilt slide, independent of the source brand.
+
 ### 2. Inspect and Extract
 
 ```bash
@@ -151,7 +153,7 @@ Create `$TMP_DIR/content-lock.json` using `references/content-lock.md`. Give eve
 
 ### 3. Map Element Logic and Select a Design System
 
-Read `references/element-logic-and-components.md` and `references/frontend-design-routing.md`. Create `$TMP_DIR/element-logic-map.json` before choosing layouts. For every locked element, record its role, relationship, group, and preservation rule. State one `logicInvariant` per slide.
+Read `references/element-logic-and-components.md`, `references/frontend-design-routing.md`, `references/design-grammar.md`, and `references/relationship-visual-map.md`. Create `$TMP_DIR/element-logic-map.json` before choosing layouts. For every locked element, record its role, relationship, group, and preservation rule. State one `logicInvariant` per slide.
 
 ```bash
 node "$BEAUTIFIER_SKILL/scripts/validate-element-logic.mjs" \
@@ -159,7 +161,9 @@ node "$BEAUTIFIER_SKILL/scripts/validate-element-logic.mjs" \
   --logic "$TMP_DIR/element-logic-map.json"
 ```
 
-Choose one primary design system according to the dominant logic, audience, density, brand fit, and exportability. Use at most one specialist visualization library for charts or node diagrams. The library supplies composition grammar, not default styling or an application shell.
+For every slide, map its `logicInvariant` to a composition family and layout via `references/relationship-visual-map.md` (process → flow, timeline → node line, hierarchy → hub-and-spoke, parallel → matrix, data → chart/metric, and so on). The relationship must be visible from the geometry, not just from color.
+
+Choose one primary design system according to the dominant logic, audience, density, brand fit, and exportability. Use at most one specialist visualization library for charts or node diagrams. The library supplies composition grammar, not default styling or an application shell; the composition family and layout come from `design-grammar.md`.
 
 Create `$TMP_DIR/design-system-decision.json`. When the intake approval mode is `recommend-and-confirm` or `preview-first`, pause and discuss one recommended direction and at most one materially different alternative before HTML authoring.
 
@@ -173,9 +177,9 @@ node "$BEAUTIFIER_SKILL/scripts/validate-project-contracts.mjs" \
 
 ### 4. Run the Visual Asset Gate
 
-Read `references/visual-asset-planning.md`. After the content lock, element-logic map, and design-system recommendation are complete, analyze both visual dimensions for every selected slide:
+Read `references/visual-asset-planning.md` and `references/icon-kit.md`. After the content lock, element-logic map, and design-system recommendation are complete, analyze both visual dimensions for every selected slide:
 
-- icon strategy: preserve, use no icon, use simple native symbols, or semantically match one consistent icon library;
+- icon strategy: preserve, use no icon, use the export-safe native icon kit (`icon-kit.md`), or semantically match one consistent icon library;
 - image strategy: preserve source imagery, use no image, use verified external assets, or generate supporting imagery with AI.
 
 Present one recommended option and at most one materially different alternative for each dimension. Explain what communication problem each asset would solve, which slides would use it, and the cost to brand fidelity, editability, and runtime. Treat `no icon` and `no image` as valid recommendations. Pause for explicit user selection; do not bundle the icon and image choices into one answer.
@@ -199,7 +203,7 @@ Write `$TMP_DIR/design-brief.txt` with the communication job, audience, visual d
 
 ### 6. Author Fixed-Stage HTML
 
-Read `references/html-authoring.md`, `references/alignment-and-fidelity.md`, `references/extraction-and-export.md`, `references/visual-recipes.md`, `references/cjk-typography.md`, and `references/visual-quality-examples.md`, then build `$TMP_DIR/deck.html`.
+Read `references/html-authoring.md`, `references/alignment-and-fidelity.md`, `references/extraction-and-export.md`, `references/visual-recipes.md`, `references/cjk-typography.md`, `references/design-grammar.md`, `references/relationship-visual-map.md`, `references/icon-kit.md`, `references/copywriting-rules.md`, and `references/visual-quality-examples.md`, then build `$TMP_DIR/deck.html`.
 
 - Use one static `<section class="slide" data-pptx-slide>` per output page.
 - Mark every exportable leaf with `data-pptx="text|shape|image|raster"`.
@@ -215,6 +219,10 @@ Read `references/html-authoring.md`, `references/alignment-and-fidelity.md`, `re
 - Use `data-pptx-valign` or Flexbox alignment instead of guessed text offsets.
 - Compose from the export-safe recipes in `references/visual-recipes.md`; prefer an editable native shape or text over a rasterized effect.
 - Apply the CJK type scale, line height, punctuation, and CJK–Latin spacing rules in `references/cjk-typography.md` to every Chinese slide.
+- Give every slide one focus and one composition family from `references/design-grammar.md`; render each relationship as its visual structure per `references/relationship-visual-map.md` (flow/timeline/hub-spoke/matrix/chart), never as a bare box grid.
+- Use the export-safe icon kit in `references/icon-kit.md` for new icons; keep one glyph family, size, weight, and color across the deck.
+- Write titles and captions per `references/copywriting-rules.md`; titles state the conclusion, no AI clichés, no placeholders.
+- Do not write free-form CSS that invents colors, fonts, or effects outside the contract; the binding constraint is in `design-grammar.md`.
 
 ### 7. Validate Before Export
 
@@ -296,6 +304,11 @@ Before delivery, run the visual-quality self-check in
 message per slide, a visible type hierarchy, no color outside the contract,
 consistent repeated edges/gaps, and no raster-only effect where an export-safe
 recipe would do.
+
+Then run the design audit in `references/visual-audit.md`: one focus per slide,
+the composition family implemented in geometry, the relationship visible without
+color, rhythm (no three consecutive same silhouettes), whitespace, and one
+consistent motif. Record "visual audit passed" in the delivery report.
 
 For partial work, run:
 
