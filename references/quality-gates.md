@@ -65,6 +65,10 @@
 
 Before delivery, record which regions were rasterized. A normal photograph exported as a PowerPoint image is still editable. A chart or compound region captured under `data-pptx="raster"` is not internally editable and must be disclosed.
 
+Run `scripts/validate-export-ledger.mjs` against `export-ledger.json` and fail when the
+rasterized ratio exceeds the agreed threshold (default 10%) or when any element was
+rasterized for an unexpected reason (HTTP 404, non-image content-type, network error).
+
 Compare the PPTX render produced by our Artifact Tool exporter with the HTML render before merging.
 Overflow success alone does not satisfy refined visual QA.
 

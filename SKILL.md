@@ -299,6 +299,14 @@ node "$BEAUTIFIER_SKILL/scripts/verify-partial-pptx.mjs" \
   --out "$TMP_DIR/partial-qa"
 ```
 
+Review the exporter's rasterization ledger and fail on excessive or unexpected
+rasterization (e.g. a 404 image or a non-image content-type):
+
+```bash
+node "$BEAUTIFIER_SKILL/scripts/validate-export-ledger.mjs" \
+  --ledger "$TMP_DIR/html-export-qa/export-ledger.json"
+```
+
 When OfficeCLI is available, run the optional native QA bridge and inspect its `validate`,
 `issues`, `stats`, and HTML outputs. If it reports a real issue, either fix it through the
 existing export workflow or record a small, explicitly approved native repair and rerun all

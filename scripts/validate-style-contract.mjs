@@ -13,6 +13,19 @@ if (contract.mode !== "brand-rebuild") {
   throw new Error("Style contract mode must be brand-rebuild");
 }
 
+const CJK_RE = /[\u3400-\u4dbf\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/;
+const CJK_CAPABLE = new Set([
+  "pingfang sc",
+  "microsoft yahei",
+  "microsoft jhenghei",
+  "simsun",
+  "simhei",
+  "noto sans sc",
+  "noto sans cjk sc",
+  "source han sans sc",
+  "harmonyos sans sc",
+]);
+
 function normalizeHex(value) {
   const text = String(value).trim().toLowerCase();
   if (/^#[0-9a-f]{3}$/.test(text)) return `#${[...text.slice(1)].map((char) => char + char).join("")}`;
@@ -58,6 +71,7 @@ try {
       return {
         id: element.dataset.sourceId || element.id || `${element.dataset.pptx}-${index + 1}`,
         kind: element.dataset.pptx,
+        hasCjk: CJK_RE.test(element.innerText || ""),
         colors,
         fontFamily: style.fontFamily.split(",")[0].replace(/["']/g, "").trim(),
         borderRadius: Math.max(parseFloat(style.borderTopLeftRadius) || 0, parseFloat(style.borderTopRightRadius) || 0, parseFloat(style.borderBottomLeftRadius) || 0, parseFloat(style.borderBottomRightRadius) || 0),
@@ -84,6 +98,9 @@ try {
       if (contract.allowGradients === false && item.backgroundImage !== "none") {
         violations.push({ slide: slideIndex + 1, id: item.id, rule: "gradient", value: item.backgroundImage });
       }
+    }
+    if (items.some((item) => item.hasCjk) && allowedFonts.size && ![...allowedFonts].some((font) => CJK_CAPABLE.has(font))) {
+      violations.push({ slide: slideIndex + 1, id: null, rule: "cjk-font", value: "slide contains CJK text but allowedFonts has no CJK-capable font" });
     }
   }
 } finally {

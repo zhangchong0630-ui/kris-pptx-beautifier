@@ -11,6 +11,29 @@ const qaDir = path.resolve(args["qa-dir"] || `${outputPptx}.qa`);
 const { chromium } = loadRuntimePackage("playwright");
 const { Presentation, PresentationFile } = await loadArtifactTool();
 
+const CJK_RE = /[\u3400-\u4dbf\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/;
+const CJK_CAPABLE = new Set([
+  "pingfang sc",
+  "microsoft yahei",
+  "microsoft jhenghei",
+  "simsun",
+  "simhei",
+  "noto sans sc",
+  "noto sans cjk sc",
+  "source han sans sc",
+  "harmonyos sans sc",
+]);
+
+function pickTypeface(fontStack, text) {
+  const fonts = String(fontStack || "")
+    .split(",")
+    .map((font) => font.replace(/["']/g, "").trim())
+    .filter(Boolean);
+  if (!fonts.length) return "Arial";
+  if (!CJK_RE.test(String(text ?? ""))) return fonts[0];
+  return fonts.find((font) => CJK_CAPABLE.has(font.toLowerCase())) || fonts[0];
+}
+
 function parseCssColor(value, opacity = 1) {
   if (!value || value === "transparent") return "none";
   const match = value.match(/rgba?\((\d+(?:\.\d+)?)[, ]+(\d+(?:\.\d+)?)[, ]+(\d+(?:\.\d+)?)(?:[, /]+(\d+(?:\.\d+)?))?\)/i);
@@ -112,6 +135,8 @@ function textLineSpacing(item) {
     && !/[\r\n]/.test(text)
     && textAlignment(item) === "center"
     && textVerticalAlignment(item) === "middle";
+  // PowerPoint applies paragraph line spacing inside vertical anchoring. Keep
+  // single-line centered labels at their natural line height for optical centering.
   return isCenteredSingleLineShape ? 1 : item.style.lineHeight / item.style.fontSize;
 }
 
@@ -121,7 +146,7 @@ function applyText(shape, item, fontScale) {
       run: run.text,
       textStyle: {
         fontSize: `${run.style.fontSize * fontScale}px`,
-        typeface: run.style.fontFamily || item.style.fontFamily || "Arial",
+        typeface: pickTypeface(run.style.fontFamily || item.style.fontFamily, run.text),
         bold: run.style.fontWeight >= 600,
         italic: run.style.fontStyle === "italic",
         underline: run.style.textDecorationLine.includes("underline") ? "sng" : undefined,
@@ -135,7 +160,7 @@ function applyText(shape, item, fontScale) {
   }
   shape.text.style = {
     fontSize: item.style.fontSize * fontScale,
-    typeface: item.style.fontFamily || "Arial",
+    typeface: pickTypeface(item.style.fontFamily, item.text),
     bold: item.style.fontWeight >= 600,
     italic: item.style.fontStyle === "italic",
     underline: item.style.textDecorationLine.includes("underline") ? "sng" : undefined,
@@ -223,7 +248,7 @@ try {
               link,
               style: {
                 color: ownerStyle.color,
-                fontFamily: ownerStyle.fontFamily.split(",")[0].replace(/["']/g, "").trim(),
+                fontFamily: ownerStyle.fontFamily,
                 fontSize: parseFloat(ownerStyle.fontSize) || 20,
                 fontWeight: Number.parseInt(ownerStyle.fontWeight, 10) || (ownerStyle.fontWeight === "bold" ? 700 : 400),
                 fontStyle: ownerStyle.fontStyle,
@@ -261,7 +286,7 @@ try {
             borderRadius: parseFloat(style.borderTopLeftRadius) || 0,
             boxShadow: style.boxShadow,
             color: style.color,
-            fontFamily: style.fontFamily.split(",")[0].replace(/["']/g, "").trim(),
+            fontFamily: style.fontFamily,
             fontSize: parseFloat(style.fontSize) || 20,
             fontWeight: Number.parseInt(style.fontWeight, 10) || (style.fontWeight === "bold" ? 700 : 400),
             fontStyle: style.fontStyle,

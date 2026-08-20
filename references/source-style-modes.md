@@ -42,6 +42,23 @@ Create `style-contract.json` from inspected source evidence:
 
 Derive every value from the source PPTX, a supplied brand guide, or explicit user instruction. Keep exceptions specific and auditable. Preserve the source background when it is part of the brand system; otherwise a brand-compatible background may be rebuilt.
 
+## Font Strategy
+
+During intake, confirm where the rebuilt deck will be opened, and choose a CJK-capable
+font stack accordingly. The exporter resolves CJK text to the first CJK-capable font in the
+stack (see `pickTypeface` in `scripts/export-html-to-pptx.mjs`); a stack whose first font is
+Latin-only (e.g. `Arial`) will render CJK correctly in the browser but export the wrong
+typeface unless a CJK font is also listed.
+
+| Delivery target | Recommended font stack |
+|---|---|
+| macOS only | `"PingFang SC", "Arial"` |
+| Windows only | `"Microsoft YaHei", "Arial"` |
+| Cross-platform | `"Source Han Sans SC", "Noto Sans SC", "Arial"` |
+
+Prefer an open, redistributable font (Source Han Sans / Noto Sans SC) for cross-platform
+delivery so the typeface survives on machines that lack the OS-specific font.
+
 ## Allowed
 
 - New composition within the same slide.
