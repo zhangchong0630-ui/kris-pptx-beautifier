@@ -59,6 +59,9 @@ typeface unless a CJK font is also listed.
 Prefer an open, redistributable font (Source Han Sans / Noto Sans SC) for cross-platform
 delivery so the typeface survives on machines that lack the OS-specific font.
 
+For Chinese decks, apply the type scale, line-height, punctuation, and CJK–Latin
+spacing rules in `references/cjk-typography.md` alongside this font strategy.
+
 ## Allowed
 
 - New composition within the same slide.

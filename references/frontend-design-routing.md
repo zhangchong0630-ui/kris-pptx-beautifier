@@ -58,6 +58,11 @@ Specialists:
 - Record the chosen system, rejected alternatives, and slide mappings in
   `design-system-decision.json`.
 
+A library supplies composition grammar, not the final skin. Implement the
+grammar with the export-safe recipes in `references/visual-recipes.md` and the
+Chinese typography rules in `references/cjk-typography.md`; check the finished
+composition against `references/visual-quality-examples.md`.
+
 ## Selection Check
 
 Reject a design-system choice when any answer is no:

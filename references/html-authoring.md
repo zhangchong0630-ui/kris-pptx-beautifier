@@ -14,6 +14,8 @@ Use static, authored HTML:
 
 Author every slide at exactly 1920x1080. Scale the fixed stage as one unit for browser display; do not reflow slide contents by viewport. The exporter uses DOM order as PowerPoint z-order. Put background shapes first, then images, then text.
 
+Position leaves explicitly: absolutely positioned leaves (overlays, metric text on a card) need `position: absolute`; repeated peer elements may stay in-flow under a CSS Grid/Flex container. The exporter measures the final rendered rect, so both are valid. Compose ready-made, export-safe patterns from `references/visual-recipes.md` instead of inventing effects that rasterize.
+
 ## Export Kinds
 
 - `text`: native editable text box. Mark only leaf text elements; do not mark both a parent and child.
@@ -33,7 +35,7 @@ Do not rely on CSS transforms, blend modes, clipping paths, masks, text gradient
 - Write each independently editable text block as a literal leaf element.
 - Add `data-pptx-rich` when inline spans or links require distinct run-level formatting.
 - Keep titles on one line when intended.
-- Use at least 72px for deck titles, 52px for slide titles, 36px for subheads, and 30px for body copy on the 1920x1080 stage unless the source or user specifies otherwise.
+- Use at least 72px for deck titles, 52px for slide titles, 36px for subheads, and 30px for body copy on the 1920x1080 stage unless the source or user specifies otherwise. For Chinese decks, follow the fuller scale and CJK rules in `references/cjk-typography.md`.
 - Use `letter-spacing: 0`.
 - Set explicit width, height, and line height.
 - Separate bullets into individual text leaves when different indentation or emphasis is needed.

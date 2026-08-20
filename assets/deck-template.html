@@ -8,18 +8,55 @@
     :root {
       --slide-width: 1920px;
       --slide-height: 1080px;
+
+      /* spacing — 8px base system */
       --space-1: 8px;
       --space-2: 16px;
       --space-3: 24px;
       --space-4: 32px;
+      --space-6: 48px;
+      --space-8: 64px;
+
+      /* page furniture */
       --page-x: 108px;
+      --page-top: 87px;
+
+      /* neutral */
       --ink: #17212b;
       --muted: #586574;
       --paper: #f7f8fa;
-      --accent: #e4572e;
-      --support: #1f6f78;
       --line: #d6dce2;
-      --font-sans: Arial, "PingFang SC", sans-serif;
+      --surface: #ffffff;
+
+      /* brand accent */
+      --accent: #e4572e;
+      --accent-soft: #fbe7df;
+      --accent-deep: #b23f1e;
+
+      /* brand support */
+      --support: #1f6f78;
+      --support-soft: #e3f0f1;
+      --support-deep: #123a3e;
+
+      /* radius */
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 20px;
+      --radius-pill: 999px;
+
+      /* shadow — neutral, blur-driven (sm ≤4px, md ≤12px, lg >12px) */
+      --shadow-sm: 0 2px 4px rgba(0, 0, 0, .08);
+      --shadow-md: 0 8px 16px rgba(0, 0, 0, .10);
+      --shadow-lg: 0 16px 32px rgba(0, 0, 0, .14);
+
+      /* type */
+      --font-sans: Arial, "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans SC", sans-serif;
+      --fs-cover: 120px;
+      --fs-title: 80px;
+      --fs-subhead: 44px;
+      --fs-body: 32px;
+      --fs-note: 24px;
+      --fs-metric: 112px;
     }
 
     * { box-sizing: border-box; }
@@ -30,7 +67,6 @@
     [data-pptx-slide] {
       position: absolute;
       inset: 0;
-      display: block;
       width: var(--slide-width);
       height: var(--slide-height);
       overflow: hidden;
@@ -42,18 +78,45 @@
     }
 
     [data-pptx-slide][data-active="true"] { visibility: visible; opacity: 1; pointer-events: auto; }
-    [data-pptx] { position: absolute; margin: 0; letter-spacing: 0; }
+
+    /* Leaves are positioned either absolutely (overlays) or in-flow (grid/flex repeats).
+       The exporter measures the final rendered rect, so both work. */
+    [data-pptx] { margin: 0; letter-spacing: 0; }
     [data-pptx="shape-text"] { display: flex; align-items: center; line-height: 1; }
-    .pptx-centered-label { justify-content: center; padding: 0; text-align: center; }
+    [data-pptx="image"] { object-fit: cover; }
 
-    .eyebrow { left: 108px; top: 87px; width: 840px; height: 42px; color: var(--support); font-size: 32px; font-weight: 700; line-height: 42px; }
-    .title { left: 108px; top: 183px; width: 1035px; height: 198px; font-size: 81px; line-height: 1.12; font-weight: 700; }
-    .body-copy { left: 108px; top: 429px; width: 840px; height: 168px; color: var(--muted); font-size: 38px; line-height: 1.42; }
-    .hero-block { left: 1239px; top: 0; width: 681px; height: 1080px; background: var(--support); }
-    .metric { left: 1239px; top: 291px; width: 681px; height: 165px; color: #ffffff; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 114px; line-height: 1; font-weight: 700; }
-    .metric-label { left: 1269px; top: 489px; width: 621px; height: 54px; color: #d7eff1; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 36px; line-height: 1; }
-    .rule { left: 108px; top: 975px; width: 1035px; height: 5px; background: var(--accent); }
+    /* ---------- Cover (absolute overlay + gradient hero) ---------- */
+    .hero-panel { position: absolute; left: 1239px; top: 0; width: 681px; height: 1080px; background: linear-gradient(160deg, #1f6f78 0%, #123a3e 100%); }
+    .eyebrow { position: absolute; left: 108px; top: 87px; width: 840px; height: 42px; color: var(--support); font-size: 32px; font-weight: 700; line-height: 42px; }
+    .cover-title { position: absolute; left: 108px; top: 180px; width: 1090px; height: 300px; font-size: 112px; line-height: 1.15; font-weight: 700; }
+    .cover-body { position: absolute; left: 108px; top: 520px; width: 840px; height: 168px; color: var(--muted); font-size: 38px; line-height: 1.42; }
+    .metric { position: absolute; left: 1239px; top: 291px; width: 681px; height: 165px; color: #ffffff; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 114px; line-height: 1; font-weight: 700; }
+    .metric-label { position: absolute; left: 1269px; top: 489px; width: 621px; height: 54px; color: #d7eff1; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 36px; line-height: 1; }
+    .rule { position: absolute; left: 108px; top: 975px; width: 1035px; height: 6px; background: var(--accent); }
 
+    /* ---------- Shared slide furniture ---------- */
+    .slide-title { position: absolute; left: var(--page-x); top: 96px; width: 1035px; height: 96px; font-size: var(--fs-title); line-height: 1.2; font-weight: 700; }
+
+    /* ---------- KPI cards (absolute overlay) ---------- */
+    .kpi-card { position: absolute; top: 300px; width: 552px; height: 340px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md); box-shadow: var(--shadow-md); }
+    .kpi-card-1 { left: 108px; }
+    .kpi-card-2 { left: 684px; }
+    .kpi-card-3 { left: 1260px; }
+    .kpi-value { position: absolute; top: 380px; width: 552px; height: 120px; font-size: var(--fs-metric); font-weight: 700; line-height: 1; text-align: center; }
+    .kpi-value-1 { left: 108px; }
+    .kpi-value-2 { left: 684px; }
+    .kpi-value-3 { left: 1260px; }
+    .kpi-label { position: absolute; top: 520px; width: 552px; height: 40px; font-size: 30px; line-height: 40px; text-align: center; color: var(--muted); }
+    .kpi-label-1 { left: 108px; }
+    .kpi-label-2 { left: 684px; }
+    .kpi-label-3 { left: 1260px; }
+
+    /* ---------- Comparison matrix (grid repeat + shape-text) ---------- */
+    .compare-grid { position: absolute; left: var(--page-x); top: 300px; width: 1704px; display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); }
+    .compare-head { height: 96px; background: var(--support); color: #ffffff; border-radius: var(--radius-md); font-size: 36px; font-weight: 700; text-align: center; display: flex; align-items: center; justify-content: center; }
+    .compare-cell { height: 400px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md); font-size: var(--fs-body); color: var(--muted); text-align: center; display: flex; align-items: center; justify-content: center; }
+
+    /* ---------- Export mode ---------- */
     body.pptx-export-mode { width: 1920px; height: auto; overflow: visible; }
     body.pptx-export-mode .deck-viewport,
     body.pptx-export-mode .deck-stage { position: static; width: 1920px; height: auto; overflow: visible; transform: none !important; }
@@ -63,15 +126,45 @@
 <body>
   <main class="deck-viewport" id="deck">
     <div class="deck-stage">
-    <section class="slide" data-pptx-slide data-active="true" data-label="Example slide">
-      <div class="hero-block" data-pptx="shape"></div>
-      <p class="eyebrow" data-pptx="text" data-source-id="s01-eyebrow">EXAMPLE SECTION</p>
-      <h1 class="title" data-pptx="text" data-source-id="s01-title">Make the argument visible</h1>
-      <p class="body-copy" data-pptx="text" data-source-id="s01-body">Replace this example with locked source content, then redesign the composition around it.</p>
-      <p class="metric" data-pptx="text" data-source-id="s01-metric">42%</p>
-      <p class="metric-label" data-pptx="text" data-source-id="s01-metric-label">Primary metric label</p>
-      <div class="rule" data-pptx="shape"></div>
-    </section>
+
+      <!-- Slide 1 · Cover: gradient hero + metric, all absolute overlay -->
+      <section class="slide" data-pptx-slide data-active="true" data-label="Cover">
+        <div class="hero-panel" data-pptx="shape"></div>
+        <p class="eyebrow" data-pptx="text" data-source-id="s01-eyebrow">EXAMPLE SECTION</p>
+        <h1 class="cover-title" data-pptx="text" data-source-id="s01-title">Make the argument visible</h1>
+        <p class="cover-body" data-pptx="text" data-source-id="s01-body">Replace this example with locked source content, then redesign the composition around it.</p>
+        <p class="metric" data-pptx="text" data-source-id="s01-metric">42%</p>
+        <p class="metric-label" data-pptx="text" data-source-id="s01-metric-label">Primary metric label</p>
+        <div class="rule" data-pptx="shape"></div>
+      </section>
+
+      <!-- Slide 2 · KPI cards: three surfaces with overlaid value + label -->
+      <section class="slide" data-pptx-slide data-label="KPI cards">
+        <h2 class="slide-title" data-pptx="text" data-source-id="s02-title">Key metrics</h2>
+        <div class="kpi-card kpi-card-1" data-pptx="shape"></div>
+        <p class="kpi-value kpi-value-1" data-pptx="text" data-source-id="s02-k1">42%</p>
+        <p class="kpi-label kpi-label-1" data-pptx="text" data-source-id="s02-k1-label">转化率提升</p>
+        <div class="kpi-card kpi-card-2" data-pptx="shape"></div>
+        <p class="kpi-value kpi-value-2" data-pptx="text" data-source-id="s02-k2">3.2×</p>
+        <p class="kpi-label kpi-label-2" data-pptx="text" data-source-id="s02-k2-label">效率提升</p>
+        <div class="kpi-card kpi-card-3" data-pptx="shape"></div>
+        <p class="kpi-value kpi-value-3" data-pptx="text" data-source-id="s02-k3">-28%</p>
+        <p class="kpi-label kpi-label-3" data-pptx="text" data-source-id="s02-k3-label">成本下降</p>
+      </section>
+
+      <!-- Slide 3 · Comparison matrix: grid repeat of shape-text cells -->
+      <section class="slide" data-pptx-slide data-label="Comparison">
+        <h2 class="slide-title" data-pptx="text" data-source-id="s03-title">Comparison</h2>
+        <div class="compare-grid" data-layout-group data-layout-check="equal-width,equal-gap">
+          <div class="compare-head" data-layout-item data-pptx="shape-text">方案 A</div>
+          <div class="compare-head" data-layout-item data-pptx="shape-text">方案 B</div>
+          <div class="compare-head" data-layout-item data-pptx="shape-text">方案 C</div>
+          <div class="compare-cell" data-layout-item data-pptx="shape-text">要点一</div>
+          <div class="compare-cell" data-layout-item data-pptx="shape-text">要点二</div>
+          <div class="compare-cell" data-layout-item data-pptx="shape-text">要点三</div>
+        </div>
+      </section>
+
     </div>
   </main>
 
@@ -97,7 +190,11 @@
     fitStage();
   </script>
   <script type="application/json" id="speaker-notes">
-    [""]
+    [
+      "Cover note",
+      "KPI note",
+      "Comparison note"
+    ]
   </script>
 </body>
 </html>

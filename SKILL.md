@@ -199,7 +199,7 @@ Write `$TMP_DIR/design-brief.txt` with the communication job, audience, visual d
 
 ### 6. Author Fixed-Stage HTML
 
-Read `references/html-authoring.md`, `references/alignment-and-fidelity.md`, and `references/extraction-and-export.md`, then build `$TMP_DIR/deck.html`.
+Read `references/html-authoring.md`, `references/alignment-and-fidelity.md`, `references/extraction-and-export.md`, `references/visual-recipes.md`, `references/cjk-typography.md`, and `references/visual-quality-examples.md`, then build `$TMP_DIR/deck.html`.
 
 - Use one static `<section class="slide" data-pptx-slide>` per output page.
 - Mark every exportable leaf with `data-pptx="text|shape|image|raster"`.
@@ -213,6 +213,8 @@ Read `references/html-authoring.md`, `references/alignment-and-fidelity.md`, and
 - Use CSS Grid/Flex and shared tokens for repeated layouts. Mark repeated groups with `data-layout-group`, `data-layout-item`, and `data-layout-check`.
 - Use `data-pptx="shape-text"` for filled labels and headers that require exact internal alignment.
 - Use `data-pptx-valign` or Flexbox alignment instead of guessed text offsets.
+- Compose from the export-safe recipes in `references/visual-recipes.md`; prefer an editable native shape or text over a rasterized effect.
+- Apply the CJK type scale, line height, punctuation, and CJK–Latin spacing rules in `references/cjk-typography.md` to every Chinese slide.
 
 ### 7. Validate Before Export
 
@@ -288,6 +290,12 @@ The replacement slide count must equal the selected source page count.
 ### 9. Final QA
 
 Read `references/quality-gates.md`. Render and inspect every final slide. Run the presentations overflow checker. Re-import the final PPTX and inspect for missing objects, changed text, broken notes, export damage, and unexpected rasterization.
+
+Before delivery, run the visual-quality self-check in
+`references/visual-quality-examples.md` against every rebuilt slide: one
+message per slide, a visible type hierarchy, no color outside the contract,
+consistent repeated edges/gaps, and no raster-only effect where an export-safe
+recipe would do.
 
 For partial work, run:
 
