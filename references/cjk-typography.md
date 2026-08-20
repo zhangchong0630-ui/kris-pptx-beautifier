@@ -11,10 +11,52 @@ Confirm the delivery target during intake and set the stack accordingly (see
 CJK-capable font in the stack, so always list a CJK font; never lead a
 Chinese deck with a Latin-only font.
 
+The starter template bundles the open **Noto Sans SC** variable font
+(`assets/fonts/NotoSansSC[wght].ttf`, SIL OFL) and declares it via `@font-face`:
+
 ```css
-/* cross-platform */
---font-sans: "Source Han Sans SC", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+@font-face {
+  font-family: "Noto Sans SC";
+  src: url("fonts/NotoSansSC[wght].ttf") format("truetype");
+  font-weight: 100 900;
+  font-display: swap;
+}
+/* Latin first, then the first CJK-capable font */
+--font-sans: Arial, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
 ```
+
+**Keep a Latin font first.** The exporter picks the first stack entry for Latin
+text and the first CJK-capable entry for CJK text. Leading with a CJK font makes
+Latin text inherit CJK vertical metrics and clip inside Latin-sized boxes; leading
+with `Arial` keeps Latin compact while CJK still resolves to `Noto Sans SC`.
+
+This renders CJK consistently in the browser preview and exports CJK text with
+typeface `Noto Sans SC`. Because the exporter does **not** embed fonts into the
+PPTX, the final file references the name only: for cross-platform delivery,
+ship `assets/fonts/NotoSansSC[wght].ttf` alongside the deliverable and ask the
+recipient to install it (right-click → Install). On a machine without it,
+PowerPoint substitutes a system CJK font.
+
+### Font Availability Check and Substitutes
+
+Verify a font actually loaded before exporting:
+
+```js
+document.fonts.ready.then(() => {
+  console.log(document.fonts.check("16px 'Noto Sans SC'")); // true = loaded
+});
+```
+
+Approved substitutes, in order, when the bundled font is unavailable:
+
+| Missing font | Use instead | Note |
+| --- | --- | --- |
+| Noto Sans SC | PingFang SC (macOS) / Microsoft YaHei (Windows) | OS-specific, non-redistributable |
+| Noto Sans SC | Source Han Sans SC | Same glyph source as Noto Sans SC, open license |
+| Any CJK | Arial | Latin only; never for CJK text |
+
+After any substitute, re-check wrapping and the export ledger; a changed
+typeface can reflow line breaks.
 
 ## Type Scale (1920x1080 stage)
 

@@ -5,6 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Kris PPTX Beautifier Deck</title>
   <style>
+    /* Bundled open CJK font for cross-platform preview. If the file is missing
+       the browser falls back to the next entry in --font-sans; the exported
+       typeface name is still "Noto Sans SC", so keep this file shipped. */
+    @font-face {
+      font-family: "Noto Sans SC";
+      src: url("fonts/NotoSansSC[wght].ttf") format("truetype");
+      font-weight: 100 900;
+      font-style: normal;
+      font-display: swap;
+    }
+
     :root {
       --slide-width: 1920px;
       --slide-height: 1080px;
@@ -50,7 +61,7 @@
       --shadow-lg: 0 16px 32px rgba(0, 0, 0, .14);
 
       /* type */
-      --font-sans: Arial, "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans SC", sans-serif;
+      --font-sans: Arial, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Source Han Sans SC", sans-serif;
       --fs-cover: 120px;
       --fs-title: 80px;
       --fs-subhead: 44px;
@@ -95,7 +106,7 @@
     .rule { position: absolute; left: 108px; top: 975px; width: 1035px; height: 6px; background: var(--accent); }
 
     /* ---------- Shared slide furniture ---------- */
-    .slide-title { position: absolute; left: var(--page-x); top: 96px; width: 1035px; height: 96px; font-size: var(--fs-title); line-height: 1.2; font-weight: 700; }
+    .slide-title { position: absolute; left: var(--page-x); top: 96px; width: 1035px; height: 120px; font-size: var(--fs-title); line-height: 1.3; font-weight: 700; }
 
     /* ---------- KPI cards (absolute overlay) ---------- */
     .kpi-card { position: absolute; top: 300px; width: 552px; height: 340px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-md); box-shadow: var(--shadow-md); }

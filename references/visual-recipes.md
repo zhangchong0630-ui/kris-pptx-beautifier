@@ -54,6 +54,15 @@ never per slide.
 }
 ```
 
+### Export-safe visual grammar
+
+| Effect | Native rule |
+| --- | --- |
+| Shadow | Only blur matters: ≤4px → `shadow-sm`, ≤12px → `shadow-md`, >12px → `shadow-lg`. Color and offset are dropped, so keep shadows neutral. |
+| Gradient | `linear-gradient(<deg>, <color> <stop%>, <color> <stop%>)` only; 2+ stops; hex or `rgb(a)`. |
+| Border | One uniform color and width on all four sides. `dashed`/`dotted` are silently exported as solid — do not rely on them. |
+| Radius | `roundRect` below half the smaller side; `ellipse` at or above half. |
+
 ## 2. Surfaces
 
 ### Brand gradient hero (export-safe)
@@ -252,6 +261,25 @@ Numbered `shape-text` pills plus a connecting line.
   border-radius: 32px; font-size: 32px; font-weight: 700; line-height: 1;
   display: flex; align-items: center; justify-content: center; text-align: center; }
 .step-line { position: absolute; width: 240px; height: 3px; background: #1f6f78; }
+```
+
+### Line / trend
+
+Diagonal line charts require `transform: rotate(...)`, which the exporter does
+not read — a diagonal trend must be rasterized or drawn with ECharts. For an
+editable native alternative, use a **step chart**: horizontal segments and dot
+markers are plain shapes.
+
+```html
+<div class="trend-h1" data-pptx="shape" data-pptx-geometry="line"></div>
+<div class="trend-h2" data-pptx="shape" data-pptx-geometry="line"></div>
+<div class="trend-dot" data-pptx="shape"></div>
+```
+
+```css
+.trend-h1 { position: absolute; left: 200px; top: 600px; width: 320px; height: 4px; background: #1f6f78; }
+.trend-h2 { position: absolute; left: 560px; top: 460px; width: 320px; height: 4px; background: #1f6f78; }
+.trend-dot { position: absolute; left: 872px; top: 448px; width: 28px; height: 28px; background: #e4572e; border-radius: 14px; }
 ```
 
 ## 5. Image Treatment (export-safe)

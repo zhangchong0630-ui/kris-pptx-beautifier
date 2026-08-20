@@ -89,7 +89,7 @@ OFFICECLI_BIN=<optional absolute path to officecli, or leave unset>
 DECK_URL=http://127.0.0.1:8123/deck.html
 ```
 
-Copy `assets/deck-template.html` to `$TMP_DIR/deck.html`. Keep intermediate inspection, HTML, ledgers, previews, and QA under `$TMP_DIR`; write only the final PPTX to `$FINAL_PPTX`.
+Copy `assets/deck-template.html` to `$TMP_DIR/deck.html` and `assets/fonts/` to `$TMP_DIR/fonts/` — the template's bundled `@font-face` resolves the CJK font from there; the browser degrades gracefully if the font file is absent. Keep intermediate inspection, HTML, ledgers, previews, and QA under `$TMP_DIR`; write only the final PPTX to `$FINAL_PPTX`.
 
 If the `presentations` skill is installed, follow its Artifact Tool workspace
 initialization (`load_workspace_dependencies`, `RUNTIME_*` variables, and
@@ -351,7 +351,9 @@ Use the presentations skill's exact output citation format.
 - If a proposed icon or image has no clear semantic or communicative role, omit it.
 - If generated-image candidates are not approved, keep the source image or use no image; never silently select a candidate.
 - If HTML and PPTX renders diverge materially, simplify the DOM or rasterize only the smallest unsupported region with a recorded reason.
-- If a font is unavailable, use an approved substitute and verify wrapping again.
+- If a font is unavailable, verify with `document.fonts.check("16px 'Noto Sans SC'")`
+  (or the agreed CJK font) in the served deck, fall back to the substitute mapping
+  in `references/cjk-typography.md`, and re-check text wrapping afterward.
 - If the optional OfficeCLI bridge is unavailable, disclose that it was skipped; this is not
   a workflow failure.
 - If OfficeCLI reports a failure, investigate and disclose it. Do not use a full native rewrite

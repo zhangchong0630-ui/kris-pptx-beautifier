@@ -52,12 +52,16 @@ typeface unless a CJK font is also listed.
 
 | Delivery target | Recommended font stack |
 |---|---|
-| macOS only | `"PingFang SC", "Arial"` |
-| Windows only | `"Microsoft YaHei", "Arial"` |
-| Cross-platform | `"Source Han Sans SC", "Noto Sans SC", "Arial"` |
+| macOS only | `"Arial", "PingFang SC"` |
+| Windows only | `"Arial", "Microsoft YaHei"` |
+| Cross-platform | `"Arial", "Noto Sans SC", "PingFang SC", "Microsoft YaHei"` |
 
-Prefer an open, redistributable font (Source Han Sans / Noto Sans SC) for cross-platform
-delivery so the typeface survives on machines that lack the OS-specific font.
+Prefer an open, redistributable font (Noto Sans SC / Source Han Sans SC) for cross-platform
+delivery so the typeface survives on machines that lack the OS-specific font. This skill
+ships `assets/fonts/NotoSansSC[wght].ttf` (SIL OFL) and the starter template declares it
+via `@font-face`, so the browser preview renders CJK consistently. The exporter does not
+embed fonts into the PPTX: ship the font file alongside the deliverable and ask the
+recipient to install it for cross-platform fidelity.
 
 For Chinese decks, apply the type scale, line-height, punctuation, and CJK–Latin
 spacing rules in `references/cjk-typography.md` alongside this font strategy.

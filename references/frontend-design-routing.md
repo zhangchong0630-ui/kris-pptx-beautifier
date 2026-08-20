@@ -40,6 +40,7 @@ Specialists:
 | Executive strategy or narrative | Mantine or a custom editorial system | Statement-led composition, fewer containers, evidence-led image |
 | Office ecosystem or familiar business workflow | Fluent UI | Structured sections, process, responsibilities, status |
 | Authentic screenshot or product evidence | Source brand first; library is secondary | Large evidence frame, numbered annotations, restrained caption |
+| Text-only content page (long-form explanation, meeting minutes) | Mantine or a custom editorial system | Single-column type-led layout, generous line height, numbered headings, one takeaway callout |
 
 ## Slide Composition Rules
 
