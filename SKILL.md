@@ -1,381 +1,120 @@
 ---
 name: kris-pptx-beautifier
 description: >-
-  Rebuild an existing PowerPoint deck within its original brand through an HTML-first workflow:
-  establish color, copy, output, and visual-direction choices with the user; inspect and decompose
-  the source PPTX; lock business content and map each page's element logic; select a suitable
-  frontend design system; separately plan icons and images with AI recommendations and user
-  approval; rebuild selected or all slides as fixed 1920x1080 HTML; export editable PowerPoint
-  objects with strict alignment fidelity; optionally use OfficeCLI for native object inspection
-  and secondary QA; and verify the final PPTX visually. Use for
-  美化PPT, 改PPT样式, 重新排版PPT, 同品牌重构, PPT转HTML再回写PPTX, or beautifying specified pages.
+  把一份现有 PPT 重新拆解、重构、设计、排版，并导出为对齐的可编辑 PPTX。
+  HTML-first：固定 1920×1080 舞台逐页重排成可编辑的 PowerPoint 文字/形状/图片，
+  一次跑完不打断用户。用于 美化PPT、改PPT样式、重新排版PPT、PPT重构、PPT换设计。
 ---
 
 # Kris PPTX Beautifier
 
-Rebuild an existing PPTX as reviewable HTML and return an editable PPTX copy. The current supported mode is `brand-rebuild` / 同品牌重构.
+输入一份 PPT，一条主线跑到底：**拆解 → 重构 → 设计 → 布局 → 校验 → 导出对齐的可编辑 PPTX**。
+不打断用户、不做多轮确认、不产出需要人工审阅的中间文件。
 
-## Non-negotiable Defaults
+## 核心原则
 
-- Preserve slide count, order, facts, text, numbers, names, units, citations, and speaker notes unless explicitly permitted otherwise.
-- Preserve hierarchy, sequence, parallel groups, comparisons, cycles, cause-and-effect links, and evidence relationships.
-- Preserve source brand colors, fonts, logo treatment, master furniture, and authentic screenshots.
-- Never overwrite the source PPTX.
-- Ask whether selected pages should be standalone or replaced in a source copy; never infer this silently.
-- Redesign only requested 1-based page numbers; when merging, keep every unselected page and note unchanged.
-- Author every HTML slide at exactly 1920x1080 and scale the fixed stage as a whole for browser viewing.
-- Do not invent page numbers, side rails, navigation, app chrome, or section shells absent from the source.
-- Analyze icon needs and image needs separately for every selected slide, including a justified recommendation to use none.
-- Do not add, replace, search for, or generate visual assets before the user approves the visual-asset plan.
-- Never use image generation to create logos, evidence, screenshots, charts, data, or interface icons.
-- Use a 12-column grid and 8px spacing system unless the source template provides a stronger grid.
-- Never hand-center text over a separate shape when a single editable shape-with-text can preserve alignment.
-- Render and inspect every final slide before delivery.
-- Treat OfficeCLI as an optional secondary native-PPTX inspection and QA layer. It must not
-  replace the HTML-first design route or override the content lock and logic map.
-- Never run a full OfficeCLI round-trip rewrite after HTML export. Use native OfficeCLI edits
-  only for a small, user-approved repair, and rerun the complete QA afterward.
+1. **内容重构优先于样式**。先把每页文字拆成最小信息单元，判断单元间关系，再据此定布局。布局必须体现关系，禁止照搬源页骨架。
+2. **文案 B 模式**：保留事实、数字、名称、单位、引用；标题讲结论；精简冗余；允许重组条目。
+3. **HTML-first**：每页一个 `<section data-pptx-slide>`（1920×1080），叶子元素用 `data-pptx="text|shape|shape-text|image|raster"` 标记，导出为可编辑 PPTX。能用原生形状/文字就不用 raster。
+4. **对齐**：导出前必须跑 `check-html-deck.mjs`（字体 ≥30px、不裁剪、不重叠、不越界），全绿才导出。
+5. **字体**：CJK 用 Noto Sans SC（`assets/fonts/`）；字体栈 Latin 必须在最前（`Arial, "Noto Sans SC", ...`），否则 CJK 行高撑爆拉丁盒子。
+6. 绝不覆盖源 PPTX；结果写到新文件。
 
-## Environment Prerequisites
+## 关系 → 布局速查
 
-Required to run this skill's scripts:
+拆解后先给每组定关系，再选布局（详见 `references/relationship-visual-map.md`）：
 
-- Node.js ≥ 18.
-- `playwright`, `@oai/artifact-tool`, `jszip`, and `pngjs` resolvable by
-  `scripts/runtime.mjs`.
-- A Chrome/Edge browser, or `PPTX_BEAUTIFIER_BROWSER` pointing to one, or
-  Playwright's bundled Chromium (`npx playwright install chromium`).
+| 关系 | 布局 |
+| --- | --- |
+| 并行 / 分类 | 等宽卡片矩阵（图标 + 标签 + 短说明） |
+| 串行 / 流程 / 步骤 | 箭头连接的步骤链 |
+| 层级 / 组织 | hub-and-spoke 组织树（中心节点 + 连接线） |
+| 对比 / 取舍 | 左右两栏或表格 |
+| 数据 / KPI | 大数字或原生图表（条形/环形） |
+| 时间线 / 里程碑 | 横向节点线 |
+| 证据 / 截图 | 分栏：大图 + 编号标注 |
+| 结论 / 金句 | 大字陈述 + 左侧竖线 |
 
-`scripts/runtime.mjs` resolves runtime packages in this order: a local
-`node_modules` next to the scripts, then `$PPTX_BEAUTIFIER_NODE_MODULES`, then
-`$CODEX_RUNTIME_NODE_MODULES`, then
-`~/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules`.
-To run outside a Codex runtime, install the dependencies once:
+## 一次跑通的流程
+
+### 1. 拆解
 
 ```bash
-npm init -y
-npm install playwright @oai/artifact-tool jszip pngjs
-npx playwright install chromium
-```
-
-## Required Companion Skill
-
-The `presentations` skill is RECOMMENDED for its Artifact Tool workspace setup, QA, and
-delivery rules, but is NOT required to run this skill's scripts. If it is unavailable,
-skip its initialization and its `mark_artifact_operation_started.mjs` step; the scripts
-below resolve their own dependencies and continue. If `@oai/artifact-tool` itself cannot
-be loaded, stop and report the blocker.
-
-If the approved visual-asset plan includes AI-generated images, load the installed `imagegen` skill before creating those assets. Never invoke image generation before the user approves both the image strategy and its intended slide roles.
-
-OfficeCLI is optional. When the `officecli` binary is available, read
-`references/officecli-integration.md` and use `scripts/officecli-bridge.mjs` for secondary
-source/final inspection. Do not install or copy OfficeCLI source or its skill into this skill.
-If the binary is unavailable, continue with the existing Artifact Tool workflow.
-
-## Workspace
-
-Define:
-
-```bash
-BEAUTIFIER_SKILL=<absolute path to this skill>
-PRESENTATIONS_SKILL=<absolute path to the active presentations skill, if installed>
-TMP_DIR=<absolute task directory>
-SOURCE_PPTX=<absolute source path>
-FINAL_PPTX=<absolute output copy path>
-SELECTED_SLIDES=<1-based list such as 3,5-7; use all pages for a full rebuild>
-STYLE_MODE=brand-rebuild
-OFFICECLI_BIN=<optional absolute path to officecli, or leave unset>
-DECK_URL=http://127.0.0.1:8123/deck.html
-```
-
-Copy `assets/deck-template.html` to `$TMP_DIR/deck.html` and `assets/fonts/` to `$TMP_DIR/fonts/` — the template's bundled `@font-face` resolves the CJK font from there; the browser degrades gracefully if the font file is absent. Keep intermediate inspection, HTML, ledgers, previews, and QA under `$TMP_DIR`; write only the final PPTX to `$FINAL_PPTX`.
-
-If the `presentations` skill is installed, follow its Artifact Tool workspace
-initialization (`load_workspace_dependencies`, `RUNTIME_*` variables, and
-`mark_artifact_operation_started.mjs` before the first create/edit). Otherwise skip it —
-`scripts/runtime.mjs` resolves the runtime packages itself.
-
-## Workflow
-
-### 1. Run the Intake Gate
-
-Read `references/intake-and-design-approval.md`. Before inspection, ask the user for:
-
-- output mode and selected 1-based pages;
-- color policy;
-- copy policy;
-- visual direction;
-- design approval mode.
-
-Ask for audience, presentation setting, protected assets, and editability only when they are not already clear. Offer concrete choices and examples; allow `AI decide`. Save the result as `$TMP_DIR/intake-contract.json`. Do not begin slide authoring until the required choices are resolved.
-
-Validate it before inspection:
-
-```bash
-node "$BEAUTIFIER_SKILL/scripts/validate-project-contracts.mjs" \
-  --intake "$TMP_DIR/intake-contract.json"
-```
-
-Read `references/source-style-modes.md`. A new composition is allowed only when the source relationship logic remains unchanged.
-
-Also read `references/design-grammar.md` and `references/copywriting-rules.md` — the design grammar and copy rules that apply to every rebuilt slide, independent of the source brand.
-
-### 2. Inspect and Extract
-
-```bash
-node "$BEAUTIFIER_SKILL/scripts/inspect-pptx.mjs" \
+node "$SKILL/scripts/inspect-pptx.mjs" \
   --pptx "$SOURCE_PPTX" \
   --slides "$SELECTED_SLIDES" \
   --out "$TMP_DIR/source-inspection"
 ```
 
-Review the full montage and every selected source slide individually. Use:
+读 `extracted-slides.json`（每页文字/图/阅读顺序）。`--slides` 可省略表示全量；`SELECTED_SLIDES` 形如 `3,5-7`。
 
-- `inspection.ndjson` for detailed objects, coordinates, layouts, masters, tables, charts, images, and notes;
-- `extracted-slides.json` for compact text, image, notes, and reading-order analysis;
-- per-slide layout JSON and rendered slides as the visual authority;
-- extracted media for authentic source assets.
+### 2. 重构（内容）
 
-If OfficeCLI is installed, run its optional inspection bridge after the Artifact Tool
-inspection. Use its outline, stable IDs, text, stats, issues, and HTML output as secondary
-object-level evidence; the rendered source slides and the extracted inspection bundle remain
-the visual and content authority.
+每页产出：**结论标题** + 若干分组，每组标注**关系类型** + 精简后的条目。
+标题按 `references/copywriting-rules.md`（讲结论、无 AI 套话、无占位符）。
 
-```bash
-node "$BEAUTIFIER_SKILL/scripts/officecli-bridge.mjs" \
-  --mode inspect \
-  --pptx "$SOURCE_PPTX" \
-  --out "$TMP_DIR/officecli/source"
-```
+### 3. 设计 + 布局
 
-Create `$TMP_DIR/content-lock.json` using `references/content-lock.md`. Give every preserved source item a stable `sourceId`. Copy source speaker notes to the corresponding HTML slide; append new `[Sources]` blocks rather than replacing notes.
+- 主题：优先沿用源品牌色；无品牌要求时用干净商务风（藏蓝主色 + 单一点缀色）。
+- 构图与原型见 `references/design-grammar.md`；导出安全组件见 `references/visual-recipes.md`。
+- 图标用 `references/icon-kit.md` 的 glyph（◆●▲■✓ 等），全 deck 统一一套。
 
-### 3. Map Element Logic and Select a Design System
+### 4. 写 HTML
 
-Read `references/element-logic-and-components.md`, `references/frontend-design-routing.md`, `references/design-grammar.md`, and `references/relationship-visual-map.md`. Create `$TMP_DIR/element-logic-map.json` before choosing layouts. For every locked element, record its role, relationship, group, and preservation rule. State one `logicInvariant` per slide.
+以 `assets/deck-template.html` 为骨架（复制到 `$TMP_DIR/deck.html`，连 `assets/fonts/` 一起拷到 `$TMP_DIR/fonts/`），逐页替换：
 
-```bash
-node "$BEAUTIFIER_SKILL/scripts/validate-element-logic.mjs" \
-  --lock "$TMP_DIR/content-lock.json" \
-  --logic "$TMP_DIR/element-logic-map.json"
-```
+- 每页一个 `data-pptx-slide`，`data-label` 命名。
+- 所有叶子加 `data-pptx` 标记；重复布局用 `data-layout-group` + `data-layout-item` + `data-layout-check`。
+- 居中填充标签用 `data-pptx="shape-text"`（Flexbox 居中 + `line-height:1`）。
+- 中文排版遵循 `references/cjk-typography.md`；渐变只用 2+ 色 `linear-gradient`；阴影只靠 blur（sm/md/lg）。
 
-For every slide, map its `logicInvariant` to a composition family and layout via `references/relationship-visual-map.md` (process → flow, timeline → node line, hierarchy → hub-and-spoke, parallel → matrix, data → chart/metric, and so on). The relationship must be visible from the geometry, not just from color.
-
-Choose one primary design system according to the dominant logic, audience, density, brand fit, and exportability. Use at most one specialist visualization library for charts or node diagrams. The library supplies composition grammar, not default styling or an application shell; the composition family and layout come from `design-grammar.md`.
-
-Create `$TMP_DIR/design-system-decision.json`. When the intake approval mode is `recommend-and-confirm` or `preview-first`, pause and discuss one recommended direction and at most one materially different alternative before HTML authoring.
-
-Validate both contracts before authoring:
-
-```bash
-node "$BEAUTIFIER_SKILL/scripts/validate-project-contracts.mjs" \
-  --intake "$TMP_DIR/intake-contract.json" \
-  --decision "$TMP_DIR/design-system-decision.json"
-```
-
-### 4. Run the Visual Asset Gate
-
-Read `references/visual-asset-planning.md` and `references/icon-kit.md`. After the content lock, element-logic map, and design-system recommendation are complete, analyze both visual dimensions for every selected slide:
-
-- icon strategy: preserve, use no icon, use the export-safe native icon kit (`icon-kit.md`), or semantically match one consistent icon library;
-- image strategy: preserve source imagery, use no image, use verified external assets, or generate supporting imagery with AI.
-
-Present one recommended option and at most one materially different alternative for each dimension. Explain what communication problem each asset would solve, which slides would use it, and the cost to brand fidelity, editability, and runtime. Treat `no icon` and `no image` as valid recommendations. Pause for explicit user selection; do not bundle the icon and image choices into one answer.
-
-Save the approved result as `$TMP_DIR/visual-asset-plan.json`. When AI image generation is approved, generate candidates only after plan approval, present the candidates for user review, and record the selected local asset plus `candidateApprovalStatus: approved` before slide authoring. Do not generate icons with an image model.
-
-Validate the completed gate:
-
-```bash
-node "$BEAUTIFIER_SKILL/scripts/validate-project-contracts.mjs" \
-  --intake "$TMP_DIR/intake-contract.json" \
-  --decision "$TMP_DIR/design-system-decision.json" \
-  --assets "$TMP_DIR/visual-asset-plan.json"
-```
-
-### 5. Bind the Brand and Plan
-
-Create `$TMP_DIR/style-contract.json` from source evidence and the approved color policy using `references/source-style-modes.md`. This contract binds colors, fonts, master behavior, radius, shadows, gradients, backgrounds, icon treatment, and image treatment.
-
-Write `$TMP_DIR/design-brief.txt` with the communication job, audience, visual direction, token treatment, and one row per slide: source page, narrative job, source logic, chosen component pattern, approved icon action, approved image action, preserved assets, and intentional deviations.
-
-### 6. Author Fixed-Stage HTML
-
-Read `references/html-authoring.md`, `references/alignment-and-fidelity.md`, `references/extraction-and-export.md`, `references/visual-recipes.md`, `references/cjk-typography.md`, `references/design-grammar.md`, `references/relationship-visual-map.md`, `references/icon-kit.md`, `references/copywriting-rules.md`, and `references/visual-quality-examples.md`, then build `$TMP_DIR/deck.html`.
-
-- Use one static `<section class="slide" data-pptx-slide>` per output page.
-- Mark every exportable leaf with `data-pptx="text|shape|image|raster"`.
-- Put `data-source-id` on every locked item.
-- Use literal static slide content; do not generate core content from JavaScript arrays.
-- Keep controls outside the slide DOM.
-- Use source images when they remain appropriate. Do not fabricate logos, evidence, screenshots, or data.
-- Follow `visual-asset-plan.json` exactly. Add `data-asset-id` to every approved non-source icon or image and keep the selected asset local to `$TMP_DIR`.
-- Use one icon family across the rebuilt pages unless the source itself contains protected icon families. Do not add icons merely to fill space.
-- Use `data-pptx="raster"` only for the smallest unsupported region.
-- Use CSS Grid/Flex and shared tokens for repeated layouts. Mark repeated groups with `data-layout-group`, `data-layout-item`, and `data-layout-check`.
-- Use `data-pptx="shape-text"` for filled labels and headers that require exact internal alignment.
-- Use `data-pptx-valign` or Flexbox alignment instead of guessed text offsets.
-- Compose from the export-safe recipes in `references/visual-recipes.md`; prefer an editable native shape or text over a rasterized effect.
-- Apply the CJK type scale, line height, punctuation, and CJK–Latin spacing rules in `references/cjk-typography.md` to every Chinese slide.
-- Give every slide one focus and one composition family from `references/design-grammar.md`; render each relationship as its visual structure per `references/relationship-visual-map.md` (flow/timeline/hub-spoke/matrix/chart), never as a bare box grid.
-- Use the export-safe icon kit in `references/icon-kit.md` for new icons; keep one glyph family, size, weight, and color across the deck.
-- Write titles and captions per `references/copywriting-rules.md`; titles state the conclusion, no AI clichés, no placeholders.
-- Do not write free-form CSS that invents colors, fonts, or effects outside the contract; the binding constraint is in `design-grammar.md`.
-
-### 7. Validate Before Export
-
-Serve `$TMP_DIR` over HTTP (do NOT use `file://`; the scripts rely on
-`document.fonts.ready` and network requests):
+### 5. 校验（对齐）
 
 ```bash
 python3 -m http.server 8123 -d "$TMP_DIR" &
+node "$SKILL/scripts/check-html-deck.mjs" --url http://127.0.0.1:8123/deck.html --min-font 30
 ```
 
-Then run:
+修掉所有越界/裁剪/重叠/未标记/非 1920×1080 问题后再导出。
+
+### 6. 导出
 
 ```bash
-node "$BEAUTIFIER_SKILL/scripts/validate-content.mjs" \
-  --url "$DECK_URL" \
-  --lock "$TMP_DIR/content-lock.json"
-
-node "$BEAUTIFIER_SKILL/scripts/check-html-deck.mjs" \
-  --url "$DECK_URL"
-
-node "$BEAUTIFIER_SKILL/scripts/validate-style-contract.mjs" \
-  --url "$DECK_URL" \
-  --contract "$TMP_DIR/style-contract.json"
+node "$SKILL/scripts/export-html-to-pptx.mjs" \
+  --url http://127.0.0.1:8123/deck.html \
+  --out "$FINAL_PPTX"
 ```
 
-Fix every changed locked item, non-1920x1080 stage, out-of-bounds element, clipped text box, unmarked visible asset, unintended overlap, and off-contract style.
-Also fix every failed equal-edge, equal-size, equal-gap, text-anchor, and internal-centering check. Overflow-only success is not sufficient.
+默认输出 1280×720（16:9）。渲染导出器 QA 目录里的每页 PNG，肉眼确认无错位后交付。
 
-### 8. Export Editable PPTX
+## 脚本速查
 
-Use this skill's own DOM-to-PPTX exporter. It measures the final 1920x1080 browser DOM, reads computed styles, and creates editable Artifact Tool text, shapes, and images. It does not invoke either reference project.
+| 脚本 | 用途 |
+| --- | --- |
+| `inspect-pptx.mjs` | 拆解源 PPTX（文字/图/结构） |
+| `check-html-deck.mjs` | 对齐校验（字体/裁剪/重叠/越界） |
+| `export-html-to-pptx.mjs` | DOM → 可编辑 PPTX |
+| `validate-export-ledger.mjs` | 检查意外栅格化 |
+| `inspect-pptx.mjs`（对最终 PPTX） | 交付前复核文字未丢 |
 
-The exporter defaults to 1280x720 (the standard 16:9 PPTX EMU size at 96 dpi). For
-`replace-in-copy` merges the replacement EMU size MUST equal the source page EMU
-size, so read the source size from `$TMP_DIR/source-inspection/source-summary.json`
-(`widthEmu`/`heightEmu`) and pass it explicitly:
+## 必读参考（其余按需查阅）
 
-```bash
-node "$BEAUTIFIER_SKILL/scripts/export-html-to-pptx.mjs" \
-  --url "$DECK_URL" \
-  --out "$TMP_DIR/replacement.pptx" \
-  --qa-dir "$TMP_DIR/html-export-qa" \
-  --pptx-width <source width in px> \
-  --pptx-height <source height in px>
+- `references/copywriting-rules.md` — 标题讲结论，禁 AI 套话
+- `references/relationship-visual-map.md` — 关系 → 视觉结构
+- `references/design-grammar.md` — 构图家族 + 布局原型
+- `references/visual-recipes.md` — 导出安全组件配方
+- `references/cjk-typography.md` — 中文字号/行高/标点/字体栈
 
-node "$BEAUTIFIER_SKILL/scripts/compare-export-layout.mjs" \
-  --qa-dir "$TMP_DIR/html-export-qa" \
-  --tolerance 1
-```
+其余 `references/`（intake、officecli、quality-gates、visual-audit、element-logic、frontend-routing、html-authoring、alignment-and-fidelity、extraction-and-export、content-lock、source-style-modes、visual-asset-planning、approach-notes）为可选深度资料，默认不读。
 
-(EMU = px * 9525; 1280x720 px = 12192000x6858000 EMU.)
+## 失败规则
 
-Follow `intake-contract.json`:
-
-- For `standalone-selected`, copy the replacement deck to `$FINAL_PPTX` without merging.
-- For `replace-in-copy`, merge replacement slides into the source deck copy so its master/layout hierarchy remains intact.
-- For a full rebuild, export the complete authored deck.
-
-For `replace-in-copy`:
-
-```bash
-node "$BEAUTIFIER_SKILL/scripts/merge-partial-pptx.mjs" \
-  --source "$SOURCE_PPTX" \
-  --replacement "$TMP_DIR/replacement.pptx" \
-  --slides "$SELECTED_SLIDES" \
-  --style-mode brand-rebuild \
-  --out "$FINAL_PPTX" \
-  --ledger "$TMP_DIR/partial-merge-ledger.json"
-```
-
-The replacement slide count must equal the selected source page count.
-
-### 9. Final QA
-
-Read `references/quality-gates.md`. Render and inspect every final slide. Run the presentations overflow checker. Re-import the final PPTX and inspect for missing objects, changed text, broken notes, export damage, and unexpected rasterization.
-
-Before delivery, run the visual-quality self-check in
-`references/visual-quality-examples.md` against every rebuilt slide: one
-message per slide, a visible type hierarchy, no color outside the contract,
-consistent repeated edges/gaps, and no raster-only effect where an export-safe
-recipe would do.
-
-Then run the design audit in `references/visual-audit.md`: one focus per slide,
-the composition family implemented in geometry, the relationship visible without
-color, rhythm (no three consecutive same silhouettes), whitespace, and one
-consistent motif. Record "visual audit passed" in the delivery report.
-
-For partial work, run:
-
-```bash
-node "$BEAUTIFIER_SKILL/scripts/verify-partial-pptx.mjs" \
-  --source "$SOURCE_PPTX" \
-  --final "$FINAL_PPTX" \
-  --slides "$SELECTED_SLIDES" \
-  --out "$TMP_DIR/partial-qa"
-```
-
-Review the exporter's rasterization ledger and fail on excessive or unexpected
-rasterization (e.g. a 404 image or a non-image content-type):
-
-```bash
-node "$BEAUTIFIER_SKILL/scripts/validate-export-ledger.mjs" \
-  --ledger "$TMP_DIR/html-export-qa/export-ledger.json"
-```
-
-When OfficeCLI is available, run the optional native QA bridge and inspect its `validate`,
-`issues`, `stats`, and HTML outputs. If it reports a real issue, either fix it through the
-existing export workflow or record a small, explicitly approved native repair and rerun all
-final QA. Never silently discard a failed OfficeCLI check.
-
-```bash
-node "$BEAUTIFIER_SKILL/scripts/officecli-bridge.mjs" \
-  --mode qa \
-  --pptx "$FINAL_PPTX" \
-  --out "$TMP_DIR/officecli/final"
-```
-
-Compare every selected final slide with its source, content lock, logic invariant, and HTML render. Apply `references/alignment-and-fidelity.md`: inspect HTML/PPT geometry, repeated edges and gaps, shape-text internal alignment, rendered output at full size, and critical regions at 200%. Visual differences are expected; semantic differences require explicit permission.
-
-### 10. Deliver
-
-Return the final PPTX copy and briefly state that:
-
-- 同品牌重构 was applied;
-- state which design system supplied composition grammar while source page logic remained unchanged;
-- state the approved copy and color policies;
-- state the approved icon and image strategies, including which slides received new assets;
-- state whether the output is standalone or merged, and whether unselected pages were preserved;
-- any generated images, external assets, rasterized regions, or approved wording changes are disclosed.
-
-Use the presentations skill's exact output citation format.
-
-## Failure Rules
-
-- If the source cannot be inspected or rendered, stop and report the blocker.
-- If locked content cannot fit legibly, change the layout; split or rewrite only with permission.
-- If a component pattern changes the source relationship, reject that pattern.
-- If the visual-asset plan is not approved, stop before asset acquisition, image generation, or HTML authoring.
-- If a proposed icon or image has no clear semantic or communicative role, omit it.
-- If generated-image candidates are not approved, keep the source image or use no image; never silently select a candidate.
-- If HTML and PPTX renders diverge materially, simplify the DOM or rasterize only the smallest unsupported region with a recorded reason.
-- If a font is unavailable, verify with `document.fonts.check("16px 'Noto Sans SC'")`
-  (or the agreed CJK font) in the served deck, fall back to the substitute mapping
-  in `references/cjk-typography.md`, and re-check text wrapping afterward.
-- If the optional OfficeCLI bridge is unavailable, disclose that it was skipped; this is not
-  a workflow failure.
-- If OfficeCLI reports a failure, investigate and disclose it. Do not use a full native rewrite
-  to hide an HTML/export discrepancy.
+- 源 PPTX 无法解析/渲染 → 停下报告，不硬做。
+- 内容放不下 → 改布局；确实要删内容才动文字，并在交付说明里披露。
+- 某布局改变了原关系 → 换布局，不迁就。
+- HTML 与 PPTX 渲染差异大 → 简化 DOM，或只栅格化最小不可导区域并说明。
+- 字体不可用 → `document.fonts.check("16px 'Noto Sans SC'")` 验证，按 cjk-typography 回退并重查换行。
 
 ## Attribution
 
-The workflow was informed by the MIT-licensed `JimLiu/baoyu-design`, `zarazhangrui/frontend-slides`, and `atharva9167j/dom-to-pptx` projects. See `references/approach-notes.md`.
-The optional native inspection layer was informed by the Apache-2.0-licensed
-`iOfficeAI/OfficeCLI` project. No OfficeCLI source code, runtime package, or skill is copied
-into or installed by this workflow. See `references/approach-notes.md` and
-`references/officecli-integration.md`.
+工作流参考了 MIT 许可的 `JimLiu/baoyu-design`、`zarazhangrui/frontend-slides`、`atharva9167j/dom-to-pptx`。见 `references/approach-notes.md`。
